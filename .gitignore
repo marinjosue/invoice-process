@@ -1,0 +1,2 @@
+# Modelos ML grandes (ya subidos por LFS; no volver a versionar)
+ml-security/models/*.pkl
