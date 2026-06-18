@@ -29,4 +29,34 @@ describe('RolesGuard', () => {
     const guard = new RolesGuard(reflector as Reflector);
     expect(guard.canActivate(ctxWithRole('viewer'))).toBe(false);
   });
+
+  it('permite si algún rol del array coincide', () => {
+    const reflector = { getAllAndOverride: () => ['admin', 'manager'] } as any;
+    const guard = new RolesGuard(reflector);
+    const ctx = {
+      switchToHttp: () => ({ getRequest: () => ({ user: { roles: ['viewer', 'manager'] } }) }),
+      getHandler: () => null, getClass: () => null,
+    } as any;
+    expect(guard.canActivate(ctx)).toBe(true);
+  });
+
+  it('deniega si ningún rol del array coincide', () => {
+    const reflector = { getAllAndOverride: () => ['admin'] } as any;
+    const guard = new RolesGuard(reflector);
+    const ctx = {
+      switchToHttp: () => ({ getRequest: () => ({ user: { roles: ['viewer', 'user'] } }) }),
+      getHandler: () => null, getClass: () => null,
+    } as any;
+    expect(guard.canActivate(ctx)).toBe(false);
+  });
+
+  it('fallback a user.role si no hay roles[]', () => {
+    const reflector = { getAllAndOverride: () => ['admin'] } as any;
+    const guard = new RolesGuard(reflector);
+    const ctx = {
+      switchToHttp: () => ({ getRequest: () => ({ user: { role: 'admin' } }) }),
+      getHandler: () => null, getClass: () => null,
+    } as any;
+    expect(guard.canActivate(ctx)).toBe(true);
+  });
 });

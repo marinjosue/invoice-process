@@ -6,7 +6,8 @@ import { UsersService } from './users.service';
 import { ProfilePictureService } from './profile-picture.service';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { permissionsForRole } from '../common/rbac/role-permissions';
+import { permissionsForRoles } from '../common/rbac/role-permissions';
+import { UsuarioRolService } from '../usuario-rol/usuario-rol.service';
 
 @ApiTags('Perfil')
 @ApiBearerAuth('bearer')
@@ -16,15 +17,19 @@ export class ProfileController {
   constructor(
     private usersService: UsersService,
     private profilePictureService: ProfilePictureService,
+    private usuarioRolService: UsuarioRolService,
   ) {}
 
   @Get()
   async getProfile(@GetUser() user: any) {
     const profile = await this.usersService.findById(user._id.toString());
-    
+
     if (!profile) {
       throw new BadRequestException('Perfil no encontrado');
     }
+
+    const roleNames = await this.usuarioRolService.getRoleNames(user._id.toString());
+    const effectiveRoles = roleNames.length ? roleNames : [profile.role].filter(Boolean) as string[];
 
     return {
       success: true,
@@ -36,7 +41,8 @@ export class ProfileController {
         phone: profile.phone,
         profilePicture: profile.profilePicture,
         role: profile.role,
-        permissions: permissionsForRole(profile.role),
+        roles: effectiveRoles,
+        permissions: permissionsForRoles(effectiveRoles),
         tenantId: profile.tenantId,
         createdAt: (profile as any).createdAt,
       },
@@ -50,11 +56,14 @@ export class ProfileController {
   ) {
     // No permitir cambiar el email desde aquí (requiere verificación)
     delete updateProfileDto.email;
-    
+
     const updatedUser = await this.usersService.updateProfile(
       user._id.toString(),
       updateProfileDto,
     );
+
+    const roleNames = await this.usuarioRolService.getRoleNames(user._id.toString());
+    const effectiveRoles = roleNames.length ? roleNames : [updatedUser.role].filter(Boolean) as string[];
 
     return {
       success: true,
@@ -67,7 +76,8 @@ export class ProfileController {
         phone: updatedUser.phone,
         profilePicture: updatedUser.profilePicture,
         role: updatedUser.role,
-        permissions: permissionsForRole(updatedUser.role),
+        roles: effectiveRoles,
+        permissions: permissionsForRoles(effectiveRoles),
       },
     };
   }

@@ -60,6 +60,12 @@ export const appRoutes: Routes = [
                 data: { breadcrumb: 'Inventory', permission: 'inventory' }
             },
             {
+                path: 'users',
+                loadChildren: () => import('@/pages/users/users.routes').then(m => m.usersRoutes),
+                canActivate: [RoleGuard],
+                data: { breadcrumb: 'Usuarios', permission: 'admin.users' }
+            },
+            {
                 path: '',
                 redirectTo: 'dashboard',
                 pathMatch: 'full'

@@ -14,7 +14,7 @@ Commit local → GitHub → Pipeline CI/CD → Pruebas → Análisis de segurida
 ```
    dev ──PR──▶ test ──PR(auto)──▶ main ──▶ Despliegue
     │            │                  │
-    │            │                  └─ deploy-production (Render + Vercel)   [PENDIENTE]
+    │            │                  └─ deploy-production (Google Cloud Run)   ✅ EN VIVO
     │            └─ test-pipeline: pruebas back+front → auto-merge a main
     └─ security-pipeline: análisis ML de vulnerabilidades → auto-merge a test
 ```
@@ -26,11 +26,10 @@ Commit local → GitHub → Pipeline CI/CD → Pruebas → Análisis de segurida
 | push directo a `main` | `block-direct-push.yml` | Detecta y **alerta** (Telegram) que se saltó el flujo |
 | PR hacia `main` | `block-invalid-flow.yml` | Bloquea PRs que no vengan de `test` |
 | push/PR a `main`,`test`,`dev` | `ci.yml` | **Instalar → Lint → Pruebas (+cobertura) → Build → SonarCloud → Telegram** |
-| dispatch (desde test-pipeline) | `deploy-production.yml` | Despliega **backend→Render** y **frontend→Vercel** + notifica  **[PENDIENTE]** |
+| dispatch (desde test-pipeline) | `deploy-production.yml` | Build+push de imágenes Docker y despliega **backend y frontend a Google Cloud Run** + notifica ✅ |
 
-> ⚠️ **Estado de las ramas:** hoy solo existe `main`. Las ramas `dev` y `test` **aún no se han creado**,
-> por lo que el flujo de auto-merge y el despliegue automático todavía **no están activos** — los
-> workflows ya están escritos y listos para cuando se creen.
+> **Estado de las ramas:** existen `main`, `dev` y `test`. Falta abrir un **PR de demostración** `dev→test`
+> para ver correr el flujo de auto-merge completo (el despliegue ya se ejecutó vía dispatch y está en vivo).
 
 ## 3. Pipeline principal `ci.yml` (activo)
 
@@ -61,19 +60,21 @@ Corre en cada push/PR a `main` (y a `test`/`dev` cuando existan). Etapas, **fall
   y `security-pipeline.yml` lo descarga con `gh release download` (autenticado, repo privado).
 - Si el modelo no está, el análisis ML se **omite con gracia** y SonarCloud cubre la seguridad.
 
-## 7. Despliegue (PENDIENTE)
+## 7. Despliegue (✅ EN VIVO)
 
-Diseñado en `deploy-production.yml`, **aún no ejecutado**. Para activarlo falta:
+`deploy-production.yml` construye imágenes Docker y despliega a **Google Cloud Run** (autenticación por
+Workload Identity Federation). **Ejecutado y verificado:**
 
-| Requisito | Detalle |
-|---|---|
-| Crear ramas `dev` y `test` | Para que el flujo auto-merge llegue a disparar el deploy |
-| Secrets de Render | `RENDER_API_KEY`, `RENDER_SERVICE_ID` (backend) |
-| Secrets de Vercel | `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` (frontend) |
-| URL pública | Backend en Render + Frontend en Vercel, con conexión real entre ambos |
+| Servicio | URL | Verificación |
+|---|---|---|
+| Frontend | https://liquidaciones.devsje.dev | HTTP 200 |
+| Backend | https://api.devsje.dev | `POST /api/auth/login` → HTTP 201 con token + `permissions` |
+| API Docs | https://api.devsje.dev/api-docs | Scalar |
 
-> El frontend en dev ya apunta a `http://localhost:3000/api`; en producción a una URL de Cloud Run
-> (`environment.ts`). Definir la URL definitiva al desplegar.
+- Backend: Docker (`node dist/main`, respeta `$PORT`), env vars configuradas en el servicio Cloud Run.
+- Frontend: build de producción → nginx:8080; `environment.ts` apunta a `https://api.devsje.dev/api`.
+- **Conexión real front↔back confirmada** (el front de producción consume el backend de producción).
+- Notificaciones Telegram del despliegue: operativas.
 
 ## 8. Estado actual
 
@@ -85,8 +86,8 @@ Diseñado en `deploy-production.yml`, **aún no ejecutado**. Para activarlo falt
 | DevSecOps SonarCloud | ✅ Configurado |
 | Notificaciones Telegram | ✅ Configurado y probado |
 | Modelo ML por Release | ✅ Publicado (`model-v1`) |
-| Ramas `dev`/`test` + flujo auto-merge | ⏳ Pendiente (solo existe `main`) |
-| Despliegue Render + Vercel | ⏳ Pendiente (secrets + ejecución) |
+| Ramas `dev`/`test` creadas | ✅ (falta abrir un PR de demostración `dev→test`) |
+| Despliegue Google Cloud Run | ✅ En vivo y verificado (api.devsje.dev / liquidaciones.devsje.dev) |
 | Seguridad de `/api/pdfs` (sin auth) | ⏳ Pendiente (hueco pre-existente a cerrar) |
 
 ## 9. Mapeo a la rúbrica (/20)
@@ -94,12 +95,12 @@ Diseñado en `deploy-production.yml`, **aún no ejecutado**. Para activarlo falt
 | Criterio | Dónde |
 |---|---|
 | Módulo funcional integrado (front+back+persistencia) | RBAC sobre dominio de facturas |
-| Git: ramas, commits, PR | Flujo `dev→test→main` (ramas por crear) + commits trazables |
+| Git: ramas, commits, PR | Ramas `main/dev/test` + commits trazables (PR de demostración por abrir) |
 | Pruebas automatizadas | Jest + Karma en `ci.yml`/`test-pipeline.yml` |
 | Pipeline GitHub Actions funcional | `ci.yml` (falla en etapa crítica) |
 | DevSecOps SonarCloud | Job `sonarcloud` + `sonar-project.properties` |
 | Build reproducible | Etapas Build de `ci.yml` |
-| Despliegue cloud | `deploy-production.yml` (Render+Vercel) — **pendiente** |
+| Despliegue cloud | `deploy-production.yml` → **Google Cloud Run** ✅ (api.devsje.dev / liquidaciones.devsje.dev) |
 | Notificaciones Telegram | Job `notify` + workflows |
 | Evidencias técnicas | Esta carpeta (`evidencia-roles/`) + capturas |
 

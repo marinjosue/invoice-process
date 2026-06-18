@@ -6,12 +6,14 @@ import { ProfileController } from './profile.controller';
 import { ProfilePictureService } from './profile-picture.service';
 import { PersonsModule } from '../persons/persons.module';
 import { RolesModule } from '../roles/roles.module';
+import { AdminUsersModule } from '../admin-users/admin-users.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     PersonsModule,
     RolesModule,
+    AdminUsersModule,
   ],
   controllers: [ProfileController],
   providers: [UsersService, ProfilePictureService],

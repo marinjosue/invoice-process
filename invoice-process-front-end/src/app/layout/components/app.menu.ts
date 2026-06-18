@@ -42,6 +42,9 @@ export class AppMenu {
                 { label: 'Gestión de Facturas', icon: 'pi pi-fw pi-file-edit', routerLink: ['/invoices/management'], permission: 'invoices.manage' },
                 { label: 'Liquidaciones', icon: 'pi pi-fw pi-dollar', routerLink: ['/settlements'], permission: 'settlements' },
             ]},
+            { label: 'Administración', icon: 'pi pi-cog', items: [
+                { label: 'Usuarios', icon: 'pi pi-fw pi-user', routerLink: ['/users'], permission: 'admin.users' },
+            ]},
         ];
         const permissions = this.auth.getCurrentUser()?.permissions ?? [];
         this.model = filterMenuByPermissions(full, permissions);
