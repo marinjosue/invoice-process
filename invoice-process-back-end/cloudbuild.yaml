@@ -1,0 +1,29 @@
+steps:
+  # 1. Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/invoice-process-backend:$COMMIT_SHA', '.']
+  
+  # 2. Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/invoice-process-backend:$COMMIT_SHA']
+    
+  # 3. Deploy container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'invoice-process-backend'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/invoice-process-backend:$COMMIT_SHA'
+      - '--region'
+      - 'us-central1'
+      - '--allow-unauthenticated'
+      # Not passing --set-env-vars here so Cloud Run keeps the existing ones!
+      - '--memory'
+      - '512Mi'
+      - '--port'
+      - '3000'
+
+images:
+  - 'gcr.io/$PROJECT_ID/invoice-process-backend:$COMMIT_SHA'

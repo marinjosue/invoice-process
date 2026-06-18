@@ -1,0 +1,67 @@
+import { Routes } from '@angular/router';
+import { AppLayout } from '@/layout/components/app.layout';
+import { AuthGuard } from '@/core/guards/auth.guard';
+
+export const appRoutes: Routes = [
+    {
+        path: 'auth',
+        loadChildren: () => import('@/pages/auth/auth.routes').then(m => m.authRoutes),
+        data: { breadcrumb: 'Authentication' }
+    },
+    {
+        path: '',
+        component: AppLayout,
+        canActivate: [AuthGuard],
+        children: [
+            {
+                path: 'dashboard',
+                loadChildren: () => import('@/pages/dashboard/dashboard.routes').then(m => m.dashboardRoutes),
+                data: { breadcrumb: 'Dashboard' }
+            },
+            {
+                path: 'profile',
+                loadChildren: () => import('@/pages/profile/profile.routes').then(m => m.profileRoutes),
+                data: { breadcrumb: 'Profile' }
+            },
+            {
+                path: 'products',
+                loadChildren: () => import('@/pages/products/products.routes').then(m => m.productsRoutes),
+                data: { breadcrumb: 'Products' }
+            },
+            {
+                path: 'providers',
+                loadChildren: () => import('@/pages/providers/providers.routes').then(m => m.providersRoutes),
+                data: { breadcrumb: 'Providers' }
+            },
+            {
+                path: 'invoices',
+                loadChildren: () => import('@/pages/invoices/invoices.routes').then(m => m.invoicesRoutes),
+                data: { breadcrumb: 'Invoices' }
+            },
+            {
+                path: 'settlements',
+                loadChildren: () => import('@/pages/settlements/settlements.routes').then(m => m.settlementsRoutes),
+                data: { breadcrumb: 'Settlements' }
+            },
+            {
+                path: 'categories',
+                loadChildren: () => import('@/pages/categories/categories.routes').then(m => m.categoriesRoutes),
+                data: { breadcrumb: 'Categories' }
+            },
+            {
+                path: 'inventory',
+                loadChildren: () => import('@/pages/inventory/inventory.routes').then(m => m.inventoryRoutes),
+                data: { breadcrumb: 'Inventory' }
+            },
+            {
+                path: '',
+                redirectTo: 'dashboard',
+                pathMatch: 'full'
+            }
+        ]
+    },
+    {
+        path: '**',
+        redirectTo: '/dashboard'
+    }
+];

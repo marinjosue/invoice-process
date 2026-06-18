@@ -1,0 +1,53 @@
+
+> apollo-ng@20.0.0 build
+> ng build
+
+[33m❯[39m Building...
+[32m✔[39m Building...
+[1mInitial chunk files[22m  [2m | [22m[1mNames[22m             [2m | [22m [1mRaw size[22m[2m | [22m[1mEstimated transfer size[22m
+[32mchunk-CEDTYKF7.js[39m    [2m | [22m[2m-[22m                 [2m | [22m[36m360.70 kB[39m[2m | [22m               [36m29.11 kB[39m
+[32mchunk-HM5CGHXU.js[39m    [2m | [22m[2m-[22m                 [2m | [22m[36m218.06 kB[39m[2m | [22m               [36m49.34 kB[39m
+[32mchunk-AYASKIZR.js[39m    [2m | [22m[2m-[22m                 [2m | [22m[36m171.97 kB[39m[2m | [22m               [36m49.83 kB[39m
+[32mchunk-7ZZST2QS.js[39m    [2m | [22m[2m-[22m                 [2m | [22m [36m79.67 kB[39m[2m | [22m               [36m19.79 kB[39m
+[32mstyles-JDQA5P7P.css[39m  [2m | [22m[2mstyles[22m            [2m | [22m [36m75.76 kB[39m[2m | [22m               [36m11.06 kB[39m
+[32mpolyfills-5CFQRCPP.js[39m[2m | [22m[2mpolyfills[22m         [2m | [22m [36m34.59 kB[39m[2m | [22m               [36m11.33 kB[39m
+[32mchunk-7QUTJS3Z.js[39m    [2m | [22m[2m-[22m                 [2m | [22m [36m32.42 kB[39m[2m | [22m                [36m7.42 kB[39m
+[32mmain-QWHOLLAN.js[39m     [2m | [22m[2mmain[22m              [2m | [22m [36m32.22 kB[39m[2m | [22m                [36m8.80 kB[39m
+[32mchunk-ZZ2VLE7W.js[39m    [2m | [22m[2m-[22m                 [2m | [22m [36m26.57 kB[39m[2m | [22m                [36m6.47 kB[39m
+[32mchunk-W2WYAEST.js[39m    [2m | [22m[2m-[22m                 [2m | [22m [36m15.54 kB[39m[2m | [22m                [36m3.61 kB[39m
+[32mchunk-NMNCTQVJ.js[39m    [2m | [22m[2m-[22m                 [2m | [22m [36m12.94 kB[39m[2m | [22m                [36m4.05 kB[39m
+[32mchunk-VD7HOHBD.js[39m    [2m | [22m[2m-[22m                 [2m | [22m  [36m5.09 kB[39m[2m | [22m                [36m1.34 kB[39m
+[32mchunk-423JNW7A.js[39m    [2m | [22m[2m-[22m                 [2m | [22m  [36m2.81 kB[39m[2m | [22m                [36m1.22 kB[39m
+[32mchunk-IIZHBR7H.js[39m    [2m | [22m[2m-[22m                 [2m | [22m  [36m2.63 kB[39m[2m | [22m              [36m738 bytes[39m
+
+[1m [22m                    [2m | [22m[1mInitial total[22m     [2m | [22m  [1m[93m1.07 MB[39m[22m[2m | [22m              [1m204.10 kB[22m
+
+[1mLazy chunk files[22m     [2m | [22m[1mNames[22m             [2m | [22m [1mRaw size[22m[2m | [22m[1mEstimated transfer size[22m
+[32mchunk-MMF4HCZH.js[39m    [2m | [22m[2m-[22m                 [2m | [22m[36m388.78 kB[39m[2m | [22m               [36m68.11 kB[39m
+[32mchunk-BQ62FYXV.js[39m    [2m | [22m[2mdashboard-routes[22m  [2m | [22m[36m241.08 kB[39m[2m | [22m               [36m69.54 kB[39m
+[32mchunk-AUEGRAU4.js[39m    [2m | [22m[2msettlements-routes[22m[2m | [22m[36m111.92 kB[39m[2m | [22m               [36m23.24 kB[39m
+[32mchunk-D5U5OGDD.js[39m    [2m | [22m[2mbrowser[22m           [2m | [22m [36m64.21 kB[39m[2m | [22m               [36m17.16 kB[39m
+[32mchunk-CMFIBQJT.js[39m    [2m | [22m[2m-[22m                 [2m | [22m [36m58.17 kB[39m[2m | [22m               [36m11.73 kB[39m
+[32mchunk-OPZUIBGN.js[39m    [2m | [22m[2minvoices-routes[22m   [2m | [22m [36m40.54 kB[39m[2m | [22m               [36m10.18 kB[39m
+[32mchunk-NG2RSF3Q.js[39m    [2m | [22m[2m-[22m                 [2m | [22m [36m35.12 kB[39m[2m | [22m                [36m8.54 kB[39m
+[32mchunk-GTPIIA6K.js[39m    [2m | [22m[2mauth-routes[22m       [2m | [22m [36m34.89 kB[39m[2m | [22m                [36m5.30 kB[39m
+[32mchunk-LPETID7V.js[39m    [2m | [22m[2mprofile-routes[22m    [2m | [22m [36m16.81 kB[39m[2m | [22m                [36m4.87 kB[39m
+[32mchunk-LDMBM6VZ.js[39m    [2m | [22m[2m-[22m                 [2m | [22m [36m16.15 kB[39m[2m | [22m                [36m3.73 kB[39m
+[32mchunk-EBTXX7QE.js[39m    [2m | [22m[2m-[22m                 [2m | [22m [36m15.16 kB[39m[2m | [22m                [36m4.04 kB[39m
+[32mchunk-CDX4SYDO.js[39m    [2m | [22m[2mproducts-routes[22m   [2m | [22m [36m12.83 kB[39m[2m | [22m                [36m3.88 kB[39m
+[32mchunk-HAM67BUM.js[39m    [2m | [22m[2minventory-routes[22m  [2m | [22m [36m12.18 kB[39m[2m | [22m                [36m3.71 kB[39m
+[32mchunk-DTNA7OE7.js[39m    [2m | [22m[2mproviders-routes[22m  [2m | [22m [36m12.07 kB[39m[2m | [22m                [36m3.65 kB[39m
+[32mchunk-T3WYK6VF.js[39m    [2m | [22m[2mcategories-routes[22m [2m | [22m  [36m6.96 kB[39m[2m | [22m                [36m2.34 kB[39m
+[2m...and 8 more lazy chunks files. Use "--verbose" to show all the files.[22m
+
+Application bundle generation failed. [11.832 seconds] - 2026-03-05T21:18:35.564Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mbundle initial exceeded maximum budget. Budget 1.00 MB was not met by 70.94 kB with a total of 1.07 MB.[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1msrc/app/pages/dashboard/DashboardPage.css exceeded maximum budget. Budget 2.00 kB was not met by 6.01 kB with a total of 8.01 kB.[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1msrc/app/pages/dashboard/DashboardPage.css exceeded maximum budget. Budget 4.00 kB was not met by 4.01 kB with a total of 8.01 kB.[0m
+
+[39m[22m
