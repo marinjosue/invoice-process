@@ -1,4 +1,4 @@
-import { permissionsForRole } from './role-permissions';
+import { permissionsForRole, permissionsForRoles } from './role-permissions';
 
 describe('permissionsForRole', () => {
   it('admin tiene todas las claves', () => {
@@ -31,5 +31,25 @@ describe('permissionsForRole', () => {
   it('rol desconocido o ausente devuelve []', () => {
     expect(permissionsForRole('superman')).toEqual([]);
     expect(permissionsForRole(undefined)).toEqual([]);
+  });
+});
+
+describe('permissionsForRoles (unión)', () => {
+  it('une permisos de varios roles sin duplicados', () => {
+    const r = permissionsForRoles(['user', 'viewer']);
+    // user: dashboard, providers, products, inventory, invoices.upload, invoices.manage
+    // viewer: dashboard, invoices.manage, settlements  -> unión añade settlements
+    expect(r).toContain('settlements');
+    expect(r).toContain('providers');
+    expect(r.filter((x) => x === 'dashboard').length).toBe(1); // sin duplicados
+  });
+
+  it('lista vacía o roles desconocidos → []', () => {
+    expect(permissionsForRoles([])).toEqual([]);
+    expect(permissionsForRoles(['nope'])).toEqual([]);
+  });
+
+  it('un solo rol equivale a permissionsForRole', () => {
+    expect(permissionsForRoles(['admin'])).toEqual(permissionsForRole('admin'));
   });
 });

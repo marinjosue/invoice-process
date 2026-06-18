@@ -18,3 +18,18 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
 export function permissionsForRole(role?: string): string[] {
   return ROLE_PERMISSIONS[role ?? ''] ?? [];
 }
+
+/** Unión (sin duplicados) de los permisos de varios roles. */
+export function permissionsForRoles(roles: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const role of roles ?? []) {
+    for (const p of permissionsForRole(role)) {
+      if (!seen.has(p)) {
+        seen.add(p);
+        out.push(p);
+      }
+    }
+  }
+  return out;
+}
