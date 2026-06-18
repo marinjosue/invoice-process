@@ -1,0 +1,259 @@
+name: 🚀 Deploy to Production
+
+# IMPORTANTE: el deploy a producción NO se dispara con 'push: [main]'.
+# Solo se ejecuta vía 'workflow_dispatch', que es disparado automáticamente por
+# test-pipeline.yml DESPUÉS de pasar: análisis ML (dev→test) + tests (test→main).
+# Así, un push directo a main NO puede desplegar saltándose el flujo dev→test→main.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+jobs:
+  notify-deploy-start:
+    name: 📱 Notify Deployment Start
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📱 Notificar inicio de despliegue
+        run: |
+          COMMIT_SHA="${{ github.sha }}"
+          COMMIT_SHORT="${COMMIT_SHA:0:7}"
+          
+          MESSAGE="🚀 <b>INICIANDO DESPLIEGUE A PRODUCCIÓN</b>%0A%0A"
+          MESSAGE+="📦 <b>Repositorio:</b> ${{ github.repository }}%0A"
+          MESSAGE+="🌿 <b>Rama:</b> main%0A"
+          MESSAGE+="📝 <b>Commit:</b> ${COMMIT_SHORT}%0A%0A"
+          MESSAGE+="📋 <b>Servicios a desplegar:</b>%0A"
+          MESSAGE+="  • 🖥️ Backend → Render%0A"
+          MESSAGE+="  • 💻 Frontend → Vercel%0A%0A"
+          MESSAGE+="⏳ <b>Desplegando...</b>%0A%0A"
+          MESSAGE+="🔗 <a href='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'>Ver Progreso</a>"
+          
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=HTML"
+
+  deploy-backend:
+    name: 🖥️ Deploy Backend to Render
+    runs-on: ubuntu-latest
+    needs: [notify-deploy-start]
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🚀 Trigger Render Deploy
+        id: render
+        continue-on-error: true
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+        run: |
+          # Trigger Render deploy usando API
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys" \
+            -H "Authorization: Bearer ${RENDER_API_KEY}" \
+            -H "Content-Type: application/json")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
+            echo "deploy_status=success" >> $GITHUB_OUTPUT
+            echo "✅ Deploy iniciado exitosamente en Render"
+            echo "Response: $BODY"
+          else
+            echo "deploy_status=failed" >> $GITHUB_OUTPUT
+            echo "❌ Error al iniciar deploy en Render (HTTP: $HTTP_CODE)"
+            echo "Response: $BODY"
+            exit 1
+          fi
+      
+      - name: 📱 Notificar despliegue backend exitoso
+        if: steps.render.outputs.deploy_status == 'success'
+        run: |
+          MESSAGE="✅ <b>BACKEND DESPLEGADO</b>%0A%0A"
+          MESSAGE+="🖥️ <b>Servicio:</b> Backend (Servidor)%0A"
+          MESSAGE+="☁️ <b>Plataforma:</b> Render%0A"
+          MESSAGE+="✅ <b>Estado:</b> Deploy iniciado%0A%0A"
+          MESSAGE+="⏳ Render está construyendo y desplegando...%0A"
+          MESSAGE+="Esto puede tomar 2-5 minutos%0A%0A"
+          MESSAGE+="🔗 Verifica el estado en tu dashboard de Render"
+          
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=HTML"
+      
+      - name: 📱 Notificar error en backend
+        if: steps.render.outputs.deploy_status == 'failed'
+        run: |
+          MESSAGE="❌ <b>ERROR EN DEPLOY BACKEND</b>%0A%0A"
+          MESSAGE+="🖥️ <b>Servicio:</b> Backend (Servidor)%0A"
+          MESSAGE+="☁️ <b>Plataforma:</b> Render%0A"
+          MESSAGE+="❌ <b>Estado:</b> Error al iniciar deploy%0A%0A"
+          MESSAGE+="🔍 <b>Posibles causas:</b>%0A"
+          MESSAGE+="  • Deploy hook inválido o expirado%0A"
+          MESSAGE+="  • Servicio de Render no disponible%0A"
+          MESSAGE+="  • Problemas de red%0A%0A"
+          MESSAGE+="📝 <b>Acción:</b> Verifica tu dashboard de Render%0A%0A"
+          MESSAGE+="🔗 <a href='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'>Ver Logs</a>"
+          
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=HTML"
+
+      # Hacemos que el JOB falle si el deploy no fue exitoso. Así 'notify-deploy-complete'
+      # (if: success()) no se ejecuta por error cuando el deploy realmente falló.
+      - name: 🛑 Marcar fallo si el deploy backend no fue exitoso
+        if: steps.render.outputs.deploy_status != 'success'
+        run: |
+          echo "❌ El deploy del backend no fue exitoso"
+          exit 1
+
+  deploy-frontend:
+    name: 💻 Deploy Frontend to Vercel
+    runs-on: ubuntu-latest
+    needs: [notify-deploy-start]
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: 📦 Install Vercel CLI
+        run: npm install -g vercel
+      
+      - name: 🚀 Deploy to Vercel
+        id: vercel
+        continue-on-error: true
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          cd cliente
+          
+          # Deploy a producción
+          DEPLOY_URL=$(vercel --prod --token=$VERCEL_TOKEN --yes 2>&1 | grep -o 'https://[^ ]*' | head -1)
+          
+          if [ ! -z "$DEPLOY_URL" ]; then
+            echo "deploy_status=success" >> $GITHUB_OUTPUT
+            echo "deploy_url=$DEPLOY_URL" >> $GITHUB_OUTPUT
+            echo "✅ Frontend desplegado exitosamente: $DEPLOY_URL"
+          else
+            echo "deploy_status=failed" >> $GITHUB_OUTPUT
+            echo "❌ Error al desplegar frontend a Vercel"
+            exit 1
+          fi
+      
+      - name: 📱 Notificar despliegue frontend exitoso
+        if: steps.vercel.outputs.deploy_status == 'success'
+        run: |
+          DEPLOY_URL="${{ steps.vercel.outputs.deploy_url }}"
+          
+          MESSAGE="✅ <b>FRONTEND DESPLEGADO</b>%0A%0A"
+          MESSAGE+="💻 <b>Servicio:</b> Frontend (Cliente)%0A"
+          MESSAGE+="☁️ <b>Plataforma:</b> Vercel%0A"
+          MESSAGE+="✅ <b>Estado:</b> Deploy exitoso%0A%0A"
+          MESSAGE+="🌐 <b>URL de Producción:</b>%0A"
+          MESSAGE+="<code>${DEPLOY_URL}</code>%0A%0A"
+          MESSAGE+="🔗 <a href='${DEPLOY_URL}'>Abrir Aplicación</a>"
+          
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=HTML"
+      
+      - name: 📱 Notificar error en frontend
+        if: steps.vercel.outputs.deploy_status == 'failed'
+        run: |
+          MESSAGE="❌ <b>ERROR EN DEPLOY FRONTEND</b>%0A%0A"
+          MESSAGE+="💻 <b>Servicio:</b> Frontend (Cliente)%0A"
+          MESSAGE+="☁️ <b>Plataforma:</b> Vercel%0A"
+          MESSAGE+="❌ <b>Estado:</b> Error al desplegar%0A%0A"
+          MESSAGE+="🔍 <b>Posibles causas:</b>%0A"
+          MESSAGE+="  • Tokens de Vercel inválidos o expirados%0A"
+          MESSAGE+="  • Error en el build del proyecto%0A"
+          MESSAGE+="  • Configuración incorrecta%0A%0A"
+          MESSAGE+="📝 <b>Acción:</b> Verifica tu dashboard de Vercel%0A%0A"
+          MESSAGE+="🔗 <a href='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'>Ver Logs</a>"
+          
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=HTML"
+
+      - name: 🛑 Marcar fallo si el deploy frontend no fue exitoso
+        if: steps.vercel.outputs.deploy_status != 'success'
+        run: |
+          echo "❌ El deploy del frontend no fue exitoso"
+          exit 1
+
+  notify-deploy-complete:
+    name: 📱 Notify Deployment Complete
+    runs-on: ubuntu-latest
+    needs: [deploy-backend, deploy-frontend]
+    if: success()
+    
+    steps:
+      - name: 📱 Notificar despliegue completo
+        run: |
+          COMMIT_SHA="${{ github.sha }}"
+          COMMIT_SHORT="${COMMIT_SHA:0:7}"
+          
+          MESSAGE="🎉 <b>DESPLIEGUE COMPLETO</b>%0A%0A"
+          MESSAGE+="📦 <b>Repositorio:</b> ${{ github.repository }}%0A"
+          MESSAGE+="📝 <b>Commit:</b> ${COMMIT_SHORT}%0A%0A"
+          MESSAGE+="✅ <b>Servicios desplegados:</b>%0A"
+          MESSAGE+="  • 🖥️ Backend → Render ✅%0A"
+          MESSAGE+="  • 💻 Frontend → Vercel ✅%0A%0A"
+          MESSAGE+="🚀 <b>Pipeline CI/CD Completo:</b>%0A"
+          MESSAGE+="  1️⃣ Análisis ML de Seguridad ✅%0A"
+          MESSAGE+="  2️⃣ Tests Automáticos ✅%0A"
+          MESSAGE+="  3️⃣ Merge Automático ✅%0A"
+          MESSAGE+="  4️⃣ Despliegue a Producción ✅%0A%0A"
+          MESSAGE+="🎯 <b>Tu aplicación está EN VIVO</b>%0A%0A"
+          MESSAGE+="🔗 <a href='${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}'>Ver Commit</a>"
+          
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=HTML"
+  
+  notify-deploy-failure:
+    name: 📱 Notify Deployment Failure
+    runs-on: ubuntu-latest
+    needs: [deploy-backend, deploy-frontend]
+    if: failure()
+    
+    steps:
+      - name: 📱 Notificar fallo en despliegue
+        run: |
+          MESSAGE="❌ <b>ERROR EN DESPLIEGUE</b>%0A%0A"
+          MESSAGE+="📦 <b>Repositorio:</b> ${{ github.repository }}%0A"
+          MESSAGE+="🌿 <b>Rama:</b> main%0A"
+          MESSAGE+="❌ <b>Estado:</b> Despliegue fallido%0A%0A"
+          MESSAGE+="⚠️ <b>Uno o más servicios no se desplegaron</b>%0A%0A"
+          MESSAGE+="🔍 <b>Revisa los logs para más detalles</b>%0A"
+          MESSAGE+="📝 Verifica tu configuración de:%0A"
+          MESSAGE+="  • Render (deploy hook)%0A"
+          MESSAGE+="  • Vercel (tokens y project ID)%0A%0A"
+          MESSAGE+="🔗 <a href='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'>Ver Logs Detallados</a>"
+          
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=HTML"

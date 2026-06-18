@@ -1,0 +1,290 @@
+name: 🧪 Test Pipeline - Automated Testing
+
+on:
+  push:
+    branches: [test]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
+
+env:
+  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+jobs:
+  notify-start:
+    name: 📱 Notify Test Start
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+    
+    steps:
+      - name: 📱 Notificar inicio de pruebas
+        run: |
+          MESSAGE="🧪 <b>INICIANDO PRUEBAS AUTOMÁTICAS</b>%0A%0A"
+          MESSAGE+="📦 <b>Repositorio:</b> ${{ github.repository }}%0A"
+          MESSAGE+="🌿 <b>Rama:</b> test%0A"
+          MESSAGE+="⏰ <b>Iniciado:</b> $(date +'%Y-%m-%d %H:%M:%S')%0A%0A"
+          MESSAGE+="📋 <b>Tests a ejecutar:</b>%0A"
+          MESSAGE+="  • 🖥️ Servidor: 18 tests%0A"
+          MESSAGE+="  • 💻 Cliente: 19 tests%0A%0A"
+          MESSAGE+="⏳ <b>Ejecutando tests...</b>%0A"
+          MESSAGE+="Recibirás notificación al completar%0A%0A"
+          MESSAGE+="🔗 <a href='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'>Ver Progreso en Tiempo Real</a>"
+          
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=HTML"
+  
+  run-tests:
+    name: 🧪 Run Automated Tests
+    runs-on: ubuntu-latest
+    needs: [notify-start]
+    strategy:
+      matrix:
+        component: [servidor, cliente]
+      fail-fast: false
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ${{ matrix.component }}/package-lock.json
+      
+      - name: 📦 Install dependencies - ${{ matrix.component }}
+        run: |
+          cd ${{ matrix.component }}
+          npm ci
+      
+      - name: 🧪 Run tests - ${{ matrix.component }}
+        id: test
+        continue-on-error: true
+        env:
+          CI: true
+        run: |
+          cd ${{ matrix.component }}
+          # Ejecutar tests y capturar el EXIT CODE REAL de Jest (no parsear texto).
+          # PIPESTATUS[0] = código de salida de npm/jest aunque el output pase por 'tee'.
+          set -o pipefail
+          npm test -- --coverage --passWithNoTests --watchAll=false 2>&1 | tee test-output.log
+          TEST_EXIT=${PIPESTATUS[0]}
+
+          if [ "$TEST_EXIT" -eq 0 ]; then
+            echo "✅ Tests ejecutados exitosamente (exit=0)"
+            echo "test_result=0" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Tests fallaron o Jest crasheó (exit=$TEST_EXIT)"
+            echo "test_result=1" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: 📊 Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.component }}
+          path: ${{ matrix.component }}/coverage/
+          retention-days: 30
+      
+      - name: ✅ Notificar tests exitosos
+        if: steps.test.outputs.test_result == '0'
+        run: |
+          MESSAGE="✅ <b>TESTS PASADOS</b>%0A%0A"
+          MESSAGE+="📦 <b>Componente:</b> ${{ matrix.component }}%0A"
+          MESSAGE+="🌿 <b>Rama:</b> test%0A"
+          MESSAGE+="📊 <b>Resultado:</b> Todos los tests pasaron%0A%0A"
+          MESSAGE+="✅ El código está funcionando correctamente"
+          
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=HTML"
+      
+      - name: ❌ Notificar tests fallidos
+        if: steps.test.outputs.test_result != '0'
+        run: |
+          MESSAGE="❌ <b>TESTS FALLIDOS</b>%0A%0A"
+          MESSAGE+="📦 <b>Componente:</b> ${{ matrix.component }}%0A"
+          MESSAGE+="🌿 <b>Rama:</b> test%0A"
+          MESSAGE+="❌ <b>Resultado:</b> Algunos tests fallaron%0A%0A"
+          MESSAGE+="⚠️ <b>Acción requerida:</b> Corregir los tests antes de continuar%0A%0A"
+          MESSAGE+="🔗 <a href='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'>Ver Logs Detallados</a>"
+          
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=HTML"
+          
+          exit 1
+
+  auto-merge-to-main:
+    name: 🚀 Auto Merge to Main
+    needs: [run-tests]
+    runs-on: ubuntu-latest
+    if: success()
+    
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    
+    steps:
+      - name: 📥 Checkout test branch
+        uses: actions/checkout@v4
+        with:
+          ref: test
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: 🔀 Merge test → main
+        id: merge
+        continue-on-error: true
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          
+          # Fetch main branch
+          git fetch origin main
+          
+          # Checkout main
+          git checkout main
+          
+          # Merge test into main
+          if git merge origin/test --no-ff -m "🚀 Auto-merge: Tests passed - Ready for production"; then
+            echo "merge_status=success" >> $GITHUB_OUTPUT
+            git push origin main
+            echo "✅ Merge exitoso: test → main"
+          else
+            echo "merge_status=failed" >> $GITHUB_OUTPUT
+            echo "❌ Error: Conflictos de merge detectados"
+          fi
+      
+      - name: 📱 Notificar merge exitoso
+        if: steps.merge.outputs.merge_status == 'success'
+        run: |
+          COMMIT_SHA=$(git rev-parse HEAD)
+          COMMIT_SHORT=${COMMIT_SHA:0:7}
+          
+          MESSAGE="🎉 <b>DEPLOYING TO PRODUCTION</b>%0A%0A"
+          MESSAGE+="📦 Repo: <code>${{ github.repository }}</code>%0A"
+          MESSAGE+="🔀 Merge: <b>test → main</b>%0A"
+          MESSAGE+="📝 Commit: <code>${COMMIT_SHORT}</code>%0A%0A"
+          MESSAGE+="✅ <b>Pipeline Complete:</b>%0A"
+          MESSAGE+="  1️⃣ ML Security Analysis ✅%0A"
+          MESSAGE+="  2️⃣ Automated Tests ✅%0A"
+          MESSAGE+="  3️⃣ Auto Merge ✅%0A"
+          MESSAGE+="  4️⃣ Production Deploy (Render/Vercel) 🚀%0A%0A"
+          MESSAGE+="🌐 Deploying now..."
+          
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=HTML" || true
+      
+      - name: 📱 Notificar error en merge
+        if: steps.merge.outputs.merge_status == 'failed'
+        run: |
+          MESSAGE="❌ <b>MERGE CONFLICT DETECTED</b>%0A%0A"
+          MESSAGE+="📦 <b>Repositorio:</b> ${{ github.repository }}%0A"
+          MESSAGE+="🔀 <b>Intento:</b> test → main%0A%0A"
+          MESSAGE+="⚠️ No se pudo completar el merge automático%0A"
+          MESSAGE+="🔍 Posibles causas:%0A"
+          MESSAGE+="  • Conflictos de merge%0A"
+          MESSAGE+="  • Cambios divergentes%0A"
+          MESSAGE+="  • Protección de rama%0A%0A"
+          MESSAGE+="📝 <b>Acción requerida:</b> Merge manual%0A%0A"
+          MESSAGE+="🔗 <a href='${{ github.server_url }}/${{ github.repository }}/pulls'>Resolver Conflictos</a>"
+
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=HTML" || true
+
+      # NOTA: el push a main hecho arriba con GITHUB_TOKEN NO dispara el workflow
+      # 'deploy-production.yml' por la regla anti-recursión de GitHub Actions.
+      # Por eso lo disparamos explícitamente aquí con createWorkflowDispatch.
+      - name: 🚀 Disparar deploy-production
+        if: steps.merge.outputs.merge_status == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'deploy-production.yml',
+              ref: 'main'
+            });
+            console.log('✅ Deploy pipeline disparado');
+  
+  notify-failure:
+    name: 📱 Notify Test Failure
+    needs: [run-tests]
+    runs-on: ubuntu-latest
+    if: failure()
+    
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+    
+    steps:
+      - name: 📱 Notificar fallo en tests
+        run: |
+          MESSAGE="❌ <b>PIPELINE BLOQUEADO</b>%0A%0A"
+          MESSAGE+="📦 <b>Repositorio:</b> ${{ github.repository }}%0A"
+          MESSAGE+="🌿 <b>Rama:</b> test%0A"
+          MESSAGE+="❌ <b>Estado:</b> Tests fallidos%0A%0A"
+          MESSAGE+="⚠️ <b>El código NO puede ir a producción</b>%0A"
+          MESSAGE+="🔧 Debes corregir los tests que fallaron%0A%0A"
+          MESSAGE+="📝 <b>Acciones requeridas:</b>%0A"
+          MESSAGE+="1. Revisar los logs de tests%0A"
+          MESSAGE+="2. Corregir los problemas%0A"
+          MESSAGE+="3. Push a dev → PR a test nuevamente%0A%0A"
+          MESSAGE+="🔗 <a href='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'>Ver Logs Detallados</a>"
+          
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=HTML"
+
+  label-tests-failed:
+    name: 🏷️ Label Test Failures
+    runs-on: ubuntu-latest
+    needs: [run-tests]
+    if: failure()
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: 🏷️ Add tests-failed label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Buscar PR abierto desde test
+            const prs = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              head: 'test'
+            });
+            
+            if (prs.data.length > 0) {
+              const pr = prs.data[0];
+              await github.rest.issues.addLabels({
+                issue_number: pr.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                labels: ['tests-failed']
+              });
+              console.log('🏷️ Etiqueta tests-failed añadida al PR #' + pr.number);
+            } else {
+              console.log('No hay PR abierto desde test para etiquetar');
+            }
+

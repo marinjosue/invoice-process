@@ -1,0 +1,188 @@
+name: 🔐 Security Pipeline - ML Vulnerability Detection
+
+on:
+  pull_request:
+    branches: [test]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  statuses: write
+  actions: write
+
+env:
+  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+  TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+jobs:
+  security-analysis:
+    name: 🤖 ML Security Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: 💾 Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}-ml-deps
+          restore-keys: |
+            ${{ runner.os }}-pip-ml-deps
+            ${{ runner.os }}-pip-
+      
+      - name: ✅ Verificar modelos ML
+        run: |
+          echo "🔍 Verificando modelos entrenados..."
+          if [ ! -f ml-security/models/model_vulnerabilities.pkl ]; then
+            echo "❌ Error: Modelo principal no encontrado"
+            exit 1
+          fi
+          if [ ! -f ml-security/model_vulnerabilities.py ]; then
+            echo "❌ Error: Definición del modelo no encontrada"
+            exit 1
+          fi
+          echo "✅ Todos los modelos están disponibles"
+      
+      - name: 🔍 Detectar archivos modificados
+        id: changed-files
+        run: |
+          echo "🔍 Detectando archivos modificados..."
+          git diff --name-only origin/test...HEAD | grep -E '\.(js|jsx|ts|tsx|py|java|cpp|c|cs|php|rb|go|kt)$' > modified_files.txt || true
+          
+          FILES=$(cat modified_files.txt | wc -l)
+          echo "📋 Archivos modificados encontrados: $FILES"
+          cat modified_files.txt
+      
+      - name: 🔍 Escanear vulnerabilidades con ML
+        id: scan
+        run: |
+          pip install requests numpy scikit-learn torch transformers cloudpickle pandas
+          chmod +x .github/scripts/scan_vulnerabilities.py
+          
+          FILES=$(cat modified_files.txt | tr '\n' ' ')
+          
+          if [ -z "$FILES" ]; then
+            echo "⚠️  Sin archivos modificados - skipping scan"
+            echo "scan_status=skipped" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # Escanear SOLO archivos modificados
+          echo "📝 Escaneando archivos modificados..."
+          python .github/scripts/scan_vulnerabilities.py --files $FILES 2>&1 || true
+          
+          if [ -f "vulnerability_report.json" ]; then
+            echo "✅ Reporte generado"
+            if grep -q '"is_safe": false' vulnerability_report.json; then
+              echo "scan_status=vulnerable" >> $GITHUB_OUTPUT
+              exit 1
+            else
+              echo "scan_status=safe" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "❌ Error: No se generó reporte"
+            echo "scan_status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+      
+      - name: 📊 Comment PR with results
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            try {
+              const report = JSON.parse(fs.readFileSync('vulnerability_report.json', 'utf8'));
+              const status = report.is_safe ? '✅ SEGURO' : '❌ VULNERABLE';
+              let body = `## ${status}\n\n`;
+              body += `🤖 **Análisis ML completado**\n`;
+              body += `- Total archivos: ${report.summary?.total || 0}\n`;
+              body += `- Vulnerabilidades: ${report.summary?.vulnerable || 0}\n\n`;
+              
+              if (!report.is_safe && report.vulnerabilities?.length > 0) {
+                body += `### 🚨 Top 5 Vulnerabilidades:\n\n`;
+                report.vulnerabilities.slice(0, 5).forEach((v, i) => {
+                  body += `${i+1}. **${v.type}** (${(v.confidence*100).toFixed(1)}%)\n`;
+                  body += `   📄 \`${v.file}:${v.line}\`\n`;
+                });
+                if (report.vulnerabilities.length > 5) {
+                  body += `\n... y ${report.vulnerabilities.length - 5} más`;
+                }
+              } else {
+                body += `✅ **Sin vulnerabilidades detectadas**`;
+              }
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            } catch(e) {
+              console.log('Error:', e);
+            }
+      
+      - name: 📱 Notificar a Telegram
+        if: always()
+        run: |
+          pip install requests
+          python .github/scripts/notify_telegram.py
+        env:
+          GITHUB_COMMIT_MESSAGE: ${{ github.event.pull_request.title }}
+          GITHUB_ACTOR: ${{ github.actor }}
+      
+      - name: ❌ Fallar si hay vulnerabilidades
+        if: steps.scan.outputs.scan_status == 'vulnerable'
+        run: exit 1
+
+  auto-merge-to-test:
+    name: 🔀 Auto Merge to Test
+    needs: [security-analysis]
+    runs-on: ubuntu-latest
+    if: success()
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    
+    steps:
+      - name: 🔀 Auto merge PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.rest.pulls.merge({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.payload.pull_request.number,
+                commit_title: `🔀 Auto-merge: ${context.payload.pull_request.title}`,
+                commit_message: `Código aprobado por análisis ML de seguridad.`,
+                merge_method: 'merge'
+              });
+              console.log('✅ PR mergeado a test');
+            } catch(error) {
+              console.log('Error en merge:', error);
+            }
+      
+      - name: 🧪 Disparar test-pipeline
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'test-pipeline.yml',
+              ref: 'test'
+            });
