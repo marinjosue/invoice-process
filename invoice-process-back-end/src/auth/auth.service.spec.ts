@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { EmailService } from './email.service';
+import { UsuarioRolService } from '../usuario-rol/usuario-rol.service';
 
 describe('AuthService.getMe', () => {
   let service: AuthService;
@@ -17,6 +18,7 @@ describe('AuthService.getMe', () => {
         { provide: UsersService, useValue: usersService },
         { provide: JwtService, useValue: jwtServiceMock },
         { provide: EmailService, useValue: {} },
+        { provide: UsuarioRolService, useValue: { getRoleNames: jest.fn().mockResolvedValue([]) } },
       ],
     }).compile();
     service = moduleRef.get(AuthService);
