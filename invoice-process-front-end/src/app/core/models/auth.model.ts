@@ -6,7 +6,8 @@ export interface User {
   avatar?: string;
   profilePicture?: string;
   phone?: string;
-  role: 'admin' | 'user' | 'analyst';
+  role: 'admin' | 'manager' | 'user' | 'viewer';
+  permissions: string[];
   tenantId: string;
   tenantName?: string;
   tenantSubdomain?: string;

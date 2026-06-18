@@ -18,6 +18,7 @@ describe('AuthService', () => {
     firstName: 'Ada',
     lastName: 'Lovelace',
     role: 'admin',
+    permissions: [],
     tenantId: 't-1',
     tenantName: 'ESPE',
     tenantSubdomain: 'espe',

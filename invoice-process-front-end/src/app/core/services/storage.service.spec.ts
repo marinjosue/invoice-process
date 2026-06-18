@@ -41,6 +41,7 @@ describe('StorageService', () => {
       firstName: 'Ada',
       lastName: 'Lovelace',
       role: 'admin',
+      permissions: [],
       tenantId: 't-1',
     };
 
@@ -72,6 +73,7 @@ describe('StorageService', () => {
         firstName: 'A',
         lastName: 'B',
         role: 'user',
+        permissions: [],
         tenantId: 't-1',
       });
       service.setSettings({ theme: 'dark' });
