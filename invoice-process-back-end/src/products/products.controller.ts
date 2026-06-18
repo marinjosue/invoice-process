@@ -4,11 +4,14 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse, ApiQuery } from '@ne
 import { ProductsService } from './products.service';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
 
 @ApiTags('Productos')
 @ApiBearerAuth('bearer')
 @Controller('products')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
+@Roles('admin', 'manager', 'user')
 export class ProductsController {
   constructor(private productsService: ProductsService) {}
 

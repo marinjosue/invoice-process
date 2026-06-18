@@ -4,11 +4,14 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { SuppliersService } from './suppliers.service';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { CreateSupplierDto, UpdateSupplierDto } from './dto/supplier.dto';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
 
 @ApiTags('Proveedores')
 @ApiBearerAuth('bearer')
 @Controller('suppliers')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
+@Roles('admin', 'manager', 'user')
 export class SuppliersController {
   constructor(private suppliersService: SuppliersService) {}
 

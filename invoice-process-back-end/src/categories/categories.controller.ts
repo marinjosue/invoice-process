@@ -4,11 +4,14 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagg
 import { CategoriesService } from './categories.service';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
 
 @ApiTags('Categorías')
 @ApiBearerAuth('bearer')
 @Controller('categories')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), RolesGuard)
+@Roles('admin', 'manager')
 export class CategoriesController {
   constructor(private categoriesService: CategoriesService) {}
 
