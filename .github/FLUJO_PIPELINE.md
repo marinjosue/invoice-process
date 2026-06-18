@@ -34,9 +34,13 @@ Instalar → Lint → Pruebas (+cobertura) → Build → Análisis SonarCloud �
 | `block-direct-push.yml` | push directo a `main` | Alerta: el flujo `dev → test → main` fue saltado |
 | `block-invalid-flow.yml` | PR hacia `main` | Bloquea PRs que no vengan de `test` |
 
-> **Nota ML:** `ml-security/models/model_vulnerabilities.pkl` (~477 MB) ya **no** se versiona en git
-> (está en `.gitignore`, solo en el historial LFS). Si no está presente en el checkout, el análisis ML
-> se **omite con gracia** y la cobertura de seguridad queda a cargo de **SonarCloud**.
+> **Nota ML:** `ml-security/models/model_vulnerabilities.pkl` (~477 MB) **no** se versiona en git.
+> Se publica como **asset de un GitHub Release** (tag `model-v1`) y el `security-pipeline` lo descarga
+> con `gh release download` (autenticado con `GITHUB_TOKEN`, funciona en repo privado). Si el release
+> aún no existe, el análisis ML se **omite con gracia** y la seguridad queda a cargo de **SonarCloud**.
+>
+> **Publicar/actualizar el modelo:** Releases → *Draft a new release* → tag `model-v1` → adjunta el
+> `.pkl` → *Publish*. Para subir una versión nueva, cambia `MODEL_RELEASE_TAG` en `security-pipeline.yml`.
 
 ## 🔐 Secrets requeridos (Settings → Secrets and variables → Actions)
 
