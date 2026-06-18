@@ -30,7 +30,22 @@ describe('AdminUsersService', () => {
 
   it('createPersona llama POST /admin/personas', () => {
     api.post.and.returnValue(of({}));
-    service.createPersona({ identification: '1', firstName: 'A', lastName: 'B', email: 'a@b.c' }).subscribe();
-    expect(api.post).toHaveBeenCalledWith('/admin/personas', jasmine.any(Object));
+    const payload = { identification: '1', firstName: 'A', lastName: 'B', email: 'a@b.c' };
+    service.createPersona(payload).subscribe();
+    expect(api.post).toHaveBeenCalledWith('/admin/personas', payload);
+  });
+
+  it('createUsuario llama POST /admin/usuarios con el payload', () => {
+    api.post.and.returnValue(of({}));
+    const payload = { personaId: 'p1', username: 'u', password: 'x', roleIds: ['r1', 'r2'] };
+    service.createUsuario(payload).subscribe();
+    expect(api.post).toHaveBeenCalledWith('/admin/usuarios', payload);
+  });
+
+  it('createRol llama POST /admin/roles con el payload', () => {
+    api.post.and.returnValue(of({}));
+    const payload = { name: 'auditor', description: 'Solo lectura' };
+    service.createRol(payload).subscribe();
+    expect(api.post).toHaveBeenCalledWith('/admin/roles', payload);
   });
 });
