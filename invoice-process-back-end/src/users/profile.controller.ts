@@ -6,6 +6,7 @@ import { UsersService } from './users.service';
 import { ProfilePictureService } from './profile-picture.service';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { permissionsForRole } from '../common/rbac/role-permissions';
 
 @ApiTags('Perfil')
 @ApiBearerAuth('bearer')
@@ -35,6 +36,7 @@ export class ProfileController {
         phone: profile.phone,
         profilePicture: profile.profilePicture,
         role: profile.role,
+        permissions: permissionsForRole(profile.role),
         tenantId: profile.tenantId,
         createdAt: (profile as any).createdAt,
       },
@@ -65,6 +67,7 @@ export class ProfileController {
         phone: updatedUser.phone,
         profilePicture: updatedUser.profilePicture,
         role: updatedUser.role,
+        permissions: permissionsForRole(updatedUser.role),
       },
     };
   }
