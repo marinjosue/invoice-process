@@ -15,6 +15,9 @@ permissions:
 env:
   TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
   TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+  # Tag del GitHub Release que contiene el asset model_vulnerabilities.pkl.
+  # Súbelo una vez (Releases → Draft → tag 'model-v1' → adjunta el .pkl).
+  MODEL_RELEASE_TAG: model-v1
 
 jobs:
   security-analysis:
@@ -40,13 +43,30 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-ml-deps
             ${{ runner.os }}-pip-
-      
+
+      # El modelo (~477 MB) NO se versiona en git; se publica como asset de un
+      # GitHub Release y se descarga aquí. gh viene autenticado con GITHUB_TOKEN
+      # (funciona en repos privados). Si el release/asset no existe, no rompe:
+      # el paso siguiente detecta la ausencia y omite el análisis ML.
+      - name: ⬇️ Descargar modelo ML desde Release
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p ml-security/models
+          gh release download "$MODEL_RELEASE_TAG" \
+            --repo "${{ github.repository }}" \
+            --pattern "model_vulnerabilities.pkl" \
+            --dir ml-security/models \
+            --clobber
+        # Cambia el tag si publicas una versión nueva del modelo.
+        # MODEL_RELEASE_TAG se define a nivel de env del workflow (abajo).
+
       - name: ✅ Verificar modelos ML
         id: verify-model
         run: |
           echo "🔍 Verificando modelos entrenados..."
-          # NOTA: model_vulnerabilities.pkl (~477 MB) ya NO se versiona en git
-          # (está ignorado y solo en el historial LFS). Si no está presente,
+          # El .pkl llega desde el Release (paso anterior). Si no está presente,
           # el análisis ML se OMITE con gracia en vez de romper el pipeline.
           if [ -f ml-security/models/model_vulnerabilities.pkl ] && [ -f ml-security/model_vulnerabilities.py ]; then
             echo "✅ Modelos ML disponibles"
