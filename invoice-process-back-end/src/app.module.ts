@@ -11,6 +11,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { SettlementsModule } from './settlements/settlements.module';
 import { InventoryMovementsModule } from './inventory-movements/inventory-movements.module';
 import { PdfModule } from './modules/pdf.module';
+import { AdminUsersModule } from './admin-users/admin-users.module';
 import { DashboardController } from './controllers/dashboard.controller';
 import { Invoice, InvoiceSchema } from './invoices/schemas/invoice.schema';
 import { Product, ProductSchema } from './products/schemas/product.schema';
@@ -39,6 +40,7 @@ import { Settlement, SettlementSchema } from './settlements/schemas/settlement.s
     SettlementsModule,
     InventoryMovementsModule,
     PdfModule,
+    AdminUsersModule,
   ],
   controllers: [DashboardController],
 })
