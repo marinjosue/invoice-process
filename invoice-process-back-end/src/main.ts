@@ -80,3 +80,5 @@ async function bootstrap() {
   console.log(`Documentación Scalar en http://0.0.0.0:${port}/api-docs`);
 }
 bootstrap();
+
+// Redeploy backend: incluye el módulo de gestión de usuarios (Persona/Usuario/Rol, N:M) y sus endpoints /admin/*.
