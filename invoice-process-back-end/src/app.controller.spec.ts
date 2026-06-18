@@ -19,6 +19,9 @@ describe('AppController', () => {
       expect(appController.getHello()).toBe('Hello World!');
     });
 
+    it('should return a non-empty string', () => {
+      expect(appController.getHello().length).toBeGreaterThan(20);
+    });
 
   });
 });
