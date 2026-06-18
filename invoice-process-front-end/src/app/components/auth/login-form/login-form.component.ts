@@ -33,7 +33,7 @@ export interface LoginFormValue {
         <!-- Encabezado del formulario -->
         <div class="mb-6">
             <div class="text-surface-900 dark:text-surface-0 text-xl font-bold mb-2">
-                Sistema de Liquidaciones
+                Sistema de Liquidaciones v2.0
             </div>
             <span class="text-surface-600 dark:text-surface-200 font-medium">
                 Ingresa tus credenciales
