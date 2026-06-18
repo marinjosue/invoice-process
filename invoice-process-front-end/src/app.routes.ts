@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { AppLayout } from '@/layout/components/app.layout';
 import { AuthGuard } from '@/core/guards/auth.guard';
+import { RoleGuard } from '@/core/guards/role.guard';
 
 export const appRoutes: Routes = [
     {
@@ -26,12 +27,14 @@ export const appRoutes: Routes = [
             {
                 path: 'products',
                 loadChildren: () => import('@/pages/products/products.routes').then(m => m.productsRoutes),
-                data: { breadcrumb: 'Products' }
+                canActivate: [RoleGuard],
+                data: { breadcrumb: 'Products', permission: 'products' }
             },
             {
                 path: 'providers',
                 loadChildren: () => import('@/pages/providers/providers.routes').then(m => m.providersRoutes),
-                data: { breadcrumb: 'Providers' }
+                canActivate: [RoleGuard],
+                data: { breadcrumb: 'Providers', permission: 'providers' }
             },
             {
                 path: 'invoices',
@@ -41,17 +44,20 @@ export const appRoutes: Routes = [
             {
                 path: 'settlements',
                 loadChildren: () => import('@/pages/settlements/settlements.routes').then(m => m.settlementsRoutes),
-                data: { breadcrumb: 'Settlements' }
+                canActivate: [RoleGuard],
+                data: { breadcrumb: 'Settlements', permission: 'settlements' }
             },
             {
                 path: 'categories',
                 loadChildren: () => import('@/pages/categories/categories.routes').then(m => m.categoriesRoutes),
-                data: { breadcrumb: 'Categories' }
+                canActivate: [RoleGuard],
+                data: { breadcrumb: 'Categories', permission: 'categories' }
             },
             {
                 path: 'inventory',
                 loadChildren: () => import('@/pages/inventory/inventory.routes').then(m => m.inventoryRoutes),
-                data: { breadcrumb: 'Inventory' }
+                canActivate: [RoleGuard],
+                data: { breadcrumb: 'Inventory', permission: 'inventory' }
             },
             {
                 path: '',
