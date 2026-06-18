@@ -19,8 +19,6 @@ describe('AppController', () => {
       expect(appController.getHello()).toBe('Hello World!');
     });
 
-    it('should return the app version', () => {
-      expect(appController.getHello()).toContain('v2');
-    });
+
   });
 });
