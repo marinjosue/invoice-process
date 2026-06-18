@@ -1,8 +1,5 @@
 name: 🚀 Deploy to Production
 
-# IMPORTANTE: el deploy a producción NO se dispara con 'push: [main]'.
-# Solo se ejecuta vía 'workflow_dispatch', disparado automáticamente por
-# test-pipeline.yml DESPUÉS de pasar los tests y el merge test→main.
 on:
   workflow_dispatch:
 
@@ -19,23 +16,64 @@ env:
   FRONTEND_SERVICE: invoice-process-frontend
 
 jobs:
-  notify-deploy-start:
-    name: 📱 Notify Deployment Start
+  detectar-cambios:
+    name: 🔍 Detectar Cambios
     runs-on: ubuntu-latest
-
+    outputs:
+      backend: ${{ steps.cambios.outputs.backend }}
+      frontend: ${{ steps.cambios.outputs.frontend }}
     steps:
-      - name: 📱 Notificar inicio de despliegue
+      - name: 📥 Obtener código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: 🔍 Analizar archivos modificados
+        id: cambios
         run: |
-          COMMIT_SHA="${{ github.sha }}"
-          COMMIT_SHORT="${COMMIT_SHA:0:7}"
+          MODIFICADOS=$(git diff --name-only HEAD^1 HEAD 2>/dev/null || git diff --name-only HEAD 2>/dev/null || echo "")
+
+          echo "📋 Archivos modificados en este commit:"
+          echo "$MODIFICADOS"
+
+          if echo "$MODIFICADOS" | grep -q "^invoice-process-back-end/"; then
+            echo "backend=true" >> $GITHUB_OUTPUT
+            echo "✅ Backend modificado — se desplegará"
+          else
+            echo "backend=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Backend sin cambios — se omitirá"
+          fi
+
+          if echo "$MODIFICADOS" | grep -q "^invoice-process-front-end/"; then
+            echo "frontend=true" >> $GITHUB_OUTPUT
+            echo "✅ Frontend modificado — se desplegará"
+          else
+            echo "frontend=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Frontend sin cambios — se omitirá"
+          fi
+
+  notificar-inicio:
+    name: 📱 Notificar Inicio de Despliegue
+    runs-on: ubuntu-latest
+    needs: [detectar-cambios]
+    if: needs.detectar-cambios.outputs.backend == 'true' || needs.detectar-cambios.outputs.frontend == 'true'
+    steps:
+      - name: 📱 Enviar notificación de inicio
+        run: |
+          COMMIT_SHORT="${GITHUB_SHA:0:7}"
+          BACK="${{ needs.detectar-cambios.outputs.backend }}"
+          FRONT="${{ needs.detectar-cambios.outputs.frontend }}"
+
+          SERVICIOS=""
+          [ "$BACK" = "true" ]  && SERVICIOS+="  • 🖥️ Backend → Cloud Run%0A"
+          [ "$FRONT" = "true" ] && SERVICIOS+="  • 💻 Frontend → Cloud Run%0A"
 
           MESSAGE="🚀 <b>INICIANDO DESPLIEGUE A PRODUCCIÓN</b>%0A%0A"
           MESSAGE+="📦 <b>Repositorio:</b> ${{ github.repository }}%0A"
           MESSAGE+="🌿 <b>Rama:</b> main%0A"
           MESSAGE+="📝 <b>Commit:</b> ${COMMIT_SHORT}%0A%0A"
           MESSAGE+="📋 <b>Servicios a desplegar:</b>%0A"
-          MESSAGE+="  • 🖥️ Backend → Cloud Run%0A"
-          MESSAGE+="  • 💻 Frontend → Cloud Run%0A%0A"
+          MESSAGE+="${SERVICIOS}%0A"
           MESSAGE+="⏳ <b>Construyendo imágenes y desplegando...</b>%0A%0A"
           MESSAGE+="🔗 <a href='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'>Ver Progreso</a>"
 
@@ -44,40 +82,40 @@ jobs:
             -d "text=${MESSAGE}" \
             -d "parse_mode=HTML" || true
 
-  deploy-backend:
-    name: 🖥️ Deploy Backend to Cloud Run
+  desplegar-backend:
+    name: 🖥️ Desplegar Backend en Cloud Run
     runs-on: ubuntu-latest
-    needs: [notify-deploy-start]
-
+    needs: [detectar-cambios, notificar-inicio]
+    if: needs.detectar-cambios.outputs.backend == 'true'
     steps:
-      - name: 📥 Checkout code
+      - name: 📥 Obtener código
         uses: actions/checkout@v4
 
-      - name: 🔐 Authenticate to Google Cloud
+      - name: 🔐 Autenticar en Google Cloud
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: projects/189364885425/locations/global/workloadIdentityPools/github-pool/providers/github-provider
           service_account: github-deploy@project-01900fb5-a41d-424c-940.iam.gserviceaccount.com
 
-      - name: ☁️ Set up gcloud CLI
+      - name: ☁️ Configurar gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: 🐳 Configure Docker for GCR
+      - name: 🐳 Configurar Docker para GCR
         run: gcloud auth configure-docker gcr.io --quiet
 
-      - name: 🏗️ Build backend image
+      - name: 🏗️ Construir imagen del backend
         run: |
           docker build \
             -t gcr.io/${{ env.GCP_PROJECT }}/${{ env.BACKEND_SERVICE }}:${{ github.sha }} \
             -t gcr.io/${{ env.GCP_PROJECT }}/${{ env.BACKEND_SERVICE }}:latest \
             ./invoice-process-back-end
 
-      - name: 📤 Push backend image
+      - name: 📤 Subir imagen del backend
         run: |
           docker push gcr.io/${{ env.GCP_PROJECT }}/${{ env.BACKEND_SERVICE }}:${{ github.sha }}
           docker push gcr.io/${{ env.GCP_PROJECT }}/${{ env.BACKEND_SERVICE }}:latest
 
-      - name: 🚀 Deploy backend to Cloud Run
+      - name: 🚀 Desplegar backend en Cloud Run
         run: |
           gcloud run deploy ${{ env.BACKEND_SERVICE }} \
             --image gcr.io/${{ env.GCP_PROJECT }}/${{ env.BACKEND_SERVICE }}:${{ github.sha }} \
@@ -87,7 +125,7 @@ jobs:
             --allow-unauthenticated \
             --quiet
 
-      - name: 📱 Notificar backend desplegado
+      - name: ✅ Notificar backend desplegado
         if: success()
         run: |
           MESSAGE="✅ <b>BACKEND DESPLEGADO</b>%0A%0A"
@@ -101,10 +139,10 @@ jobs:
             -d "text=${MESSAGE}" \
             -d "parse_mode=HTML" || true
 
-      - name: 📱 Notificar error backend
+      - name: ❌ Notificar error en backend
         if: failure()
         run: |
-          MESSAGE="❌ <b>ERROR EN DEPLOY BACKEND</b>%0A%0A"
+          MESSAGE="❌ <b>ERROR AL DESPLEGAR BACKEND</b>%0A%0A"
           MESSAGE+="🔗 <a href='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'>Ver Logs</a>"
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
@@ -112,40 +150,40 @@ jobs:
             -d "text=${MESSAGE}" \
             -d "parse_mode=HTML" || true
 
-  deploy-frontend:
-    name: 💻 Deploy Frontend to Cloud Run
+  desplegar-frontend:
+    name: 💻 Desplegar Frontend en Cloud Run
     runs-on: ubuntu-latest
-    needs: [notify-deploy-start]
-
+    needs: [detectar-cambios, notificar-inicio]
+    if: needs.detectar-cambios.outputs.frontend == 'true'
     steps:
-      - name: 📥 Checkout code
+      - name: 📥 Obtener código
         uses: actions/checkout@v4
 
-      - name: 🔐 Authenticate to Google Cloud
+      - name: 🔐 Autenticar en Google Cloud
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: projects/189364885425/locations/global/workloadIdentityPools/github-pool/providers/github-provider
           service_account: github-deploy@project-01900fb5-a41d-424c-940.iam.gserviceaccount.com
 
-      - name: ☁️ Set up gcloud CLI
+      - name: ☁️ Configurar gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: 🐳 Configure Docker for GCR
+      - name: 🐳 Configurar Docker para GCR
         run: gcloud auth configure-docker gcr.io --quiet
 
-      - name: 🏗️ Build frontend image
+      - name: 🏗️ Construir imagen del frontend
         run: |
           docker build \
             -t gcr.io/${{ env.GCP_PROJECT }}/${{ env.FRONTEND_SERVICE }}:${{ github.sha }} \
             -t gcr.io/${{ env.GCP_PROJECT }}/${{ env.FRONTEND_SERVICE }}:latest \
             ./invoice-process-front-end
 
-      - name: 📤 Push frontend image
+      - name: 📤 Subir imagen del frontend
         run: |
           docker push gcr.io/${{ env.GCP_PROJECT }}/${{ env.FRONTEND_SERVICE }}:${{ github.sha }}
           docker push gcr.io/${{ env.GCP_PROJECT }}/${{ env.FRONTEND_SERVICE }}:latest
 
-      - name: 🚀 Deploy frontend to Cloud Run
+      - name: 🚀 Desplegar frontend en Cloud Run
         run: |
           gcloud run deploy ${{ env.FRONTEND_SERVICE }} \
             --image gcr.io/${{ env.GCP_PROJECT }}/${{ env.FRONTEND_SERVICE }}:${{ github.sha }} \
@@ -156,7 +194,7 @@ jobs:
             --port 8080 \
             --quiet
 
-      - name: 📱 Notificar frontend desplegado
+      - name: ✅ Notificar frontend desplegado
         if: success()
         run: |
           MESSAGE="✅ <b>FRONTEND DESPLEGADO</b>%0A%0A"
@@ -170,62 +208,58 @@ jobs:
             -d "text=${MESSAGE}" \
             -d "parse_mode=HTML" || true
 
-      - name: 📱 Notificar error frontend
+      - name: ❌ Notificar error en frontend
         if: failure()
         run: |
-          MESSAGE="❌ <b>ERROR EN DEPLOY FRONTEND</b>%0A%0A"
-          MESSAGE+="🔗 <a href='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'>Ver Logs</a>"
+          MESSAGE="❌ <b>ERROR AL DESPLEGAR FRONTEND</b>%0A%0A"
+          MESSAGE+="🔗 <a href='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'>Ver Logs Detallados</a>"
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
             -d "text=${MESSAGE}" \
             -d "parse_mode=HTML" || true
 
-  notify-deploy-complete:
-    name: 📱 Notify Deployment Complete
+  notificar-despliegue-completo:
+    name: 🎉 Notificar Despliegue Completo
     runs-on: ubuntu-latest
-    needs: [deploy-backend, deploy-frontend]
-    if: success()
-
+    needs: [detectar-cambios, desplegar-backend, desplegar-frontend]
+    if: always() && (needs.desplegar-backend.result == 'success' || needs.desplegar-frontend.result == 'success')
     steps:
-      - name: 📱 Notificar despliegue completo
+      - name: 🎉 Enviar notificación de éxito
         run: |
           COMMIT_SHORT="${GITHUB_SHA:0:7}"
+          BACK="${{ needs.desplegar-backend.result }}"
+          FRONT="${{ needs.desplegar-frontend.result }}"
+
+          icon() { case "$1" in success) echo "✅";; skipped) echo "⏭️";; *) echo "❌";; esac; }
 
           MESSAGE="🎉 <b>DESPLIEGUE COMPLETO</b>%0A%0A"
           MESSAGE+="📦 <b>Repositorio:</b> ${{ github.repository }}%0A"
           MESSAGE+="📝 <b>Commit:</b> ${COMMIT_SHORT}%0A%0A"
-          MESSAGE+="✅ <b>Servicios desplegados:</b>%0A"
-          MESSAGE+="  • 🖥️ Backend → Cloud Run ✅%0A"
-          MESSAGE+="  • 💻 Frontend → Cloud Run ✅%0A%0A"
-          MESSAGE+="🚀 <b>Pipeline CI/CD Completo:</b>%0A"
-          MESSAGE+="  1️⃣ Análisis ML de Seguridad ✅%0A"
-          MESSAGE+="  2️⃣ Tests Automáticos ✅%0A"
-          MESSAGE+="  3️⃣ Merge Automático ✅%0A"
-          MESSAGE+="  4️⃣ Despliegue a Producción ✅%0A%0A"
+          MESSAGE+="📊 <b>Resultado por servicio:</b>%0A"
+          MESSAGE+="  $(icon $BACK) Backend: ${BACK}%0A"
+          MESSAGE+="  $(icon $FRONT) Frontend: ${FRONT}%0A%0A"
           MESSAGE+="🌐 <b>URLs en producción:</b>%0A"
           MESSAGE+="  • <a href='https://liquidaciones.devsje.dev'>liquidaciones.devsje.dev</a>%0A"
-          MESSAGE+="  • <a href='https://api.devsje.dev/api-docs'>api.devsje.dev</a>%0A%0A"
-          MESSAGE+="🔗 <a href='${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}'>Ver Commit</a>"
+          MESSAGE+="  • <a href='https://api.devsje.dev/api-docs'>api.devsje.dev</a>"
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
             -d "text=${MESSAGE}" \
             -d "parse_mode=HTML" || true
 
-  notify-deploy-failure:
-    name: 📱 Notify Deployment Failure
+  notificar-sin-cambios:
+    name: ℹ️ Sin Cambios para Desplegar
     runs-on: ubuntu-latest
-    needs: [deploy-backend, deploy-frontend]
-    if: failure()
-
+    needs: [detectar-cambios]
+    if: needs.detectar-cambios.outputs.backend == 'false' && needs.detectar-cambios.outputs.frontend == 'false'
     steps:
-      - name: 📱 Notificar fallo
+      - name: ℹ️ Notificar que no hay cambios
         run: |
-          MESSAGE="❌ <b>ERROR EN DESPLIEGUE</b>%0A%0A"
-          MESSAGE+="🌿 <b>Rama:</b> main%0A"
-          MESSAGE+="⚠️ Uno o más servicios no se desplegaron%0A%0A"
-          MESSAGE+="🔗 <a href='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'>Ver Logs Detallados</a>"
+          MESSAGE="ℹ️ <b>DESPLIEGUE OMITIDO</b>%0A%0A"
+          MESSAGE+="📝 <b>Commit:</b> ${GITHUB_SHA:0:7}%0A%0A"
+          MESSAGE+="ℹ️ Los cambios no afectaron ni el backend ni el frontend.%0A"
+          MESSAGE+="No se reconstruyó ninguna imagen."
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
