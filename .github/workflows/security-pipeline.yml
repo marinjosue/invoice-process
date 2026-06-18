@@ -179,9 +179,52 @@ jobs:
       contents: write
       pull-requests: write
       actions: write
-    
+
     steps:
-      - name: 🔀 Auto merge PR
+      - name: ✅ Verificar que el CI pasó antes de mergear
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = context.payload.pull_request.head.sha;
+
+            // Esperar hasta 3 minutos a que el CI termine
+            let ciPassed = false;
+            for (let i = 0; i < 18; i++) {
+              const { data: checks } = await github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: sha,
+                per_page: 100
+              });
+
+              const ciRuns = checks.check_runs.filter(r =>
+                r.name.includes('Backend') || r.name.includes('Frontend')
+              );
+
+              const pending = ciRuns.filter(r => r.status !== 'completed');
+              if (pending.length > 0) {
+                console.log(`⏳ Esperando ${pending.length} checks pendientes...`);
+                await new Promise(r => setTimeout(r, 10000));
+                continue;
+              }
+
+              const failed = ciRuns.filter(r => r.conclusion === 'failure');
+              if (failed.length > 0) {
+                const names = failed.map(r => r.name).join(', ');
+                core.setFailed(`❌ CI falló en: ${names}. No se puede mergear a test.`);
+                return;
+              }
+
+              ciPassed = true;
+              console.log('✅ CI pasó correctamente');
+              break;
+            }
+
+            if (!ciPassed) {
+              core.setFailed('❌ Tiempo de espera agotado esperando el CI.');
+            }
+
+      - name: 🔀 Mergear PR a test
         uses: actions/github-script@v7
         with:
           script: |
@@ -191,14 +234,14 @@ jobs:
                 repo: context.repo.repo,
                 pull_number: context.payload.pull_request.number,
                 commit_title: `🔀 Auto-merge: ${context.payload.pull_request.title}`,
-                commit_message: `Código aprobado por análisis ML de seguridad.`,
+                commit_message: `Código aprobado por análisis ML de seguridad y CI.`,
                 merge_method: 'merge'
               });
               console.log('✅ PR mergeado a test');
             } catch(error) {
-              console.log('Error en merge:', error);
+              core.setFailed('Error en merge: ' + error.message);
             }
-      
+
       - name: 🧪 Disparar test-pipeline
         if: success()
         uses: actions/github-script@v7
