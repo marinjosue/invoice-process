@@ -2,9 +2,11 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { AppMenuitem } from './app.menuitem';
+import { AuthService } from '@/core/services/auth.service';
+import { filterMenuByPermissions, MenuNode } from '@/layout/service/menu-filter';
 
 @Component({
-    selector: 'app-menu', 
+    selector: 'app-menu',
     standalone: true,
     imports: [CommonModule, AppMenuitem, RouterModule],
     template: `<ul class="layout-menu">
@@ -21,84 +23,27 @@ import { AppMenuitem } from './app.menuitem';
     </ul> `,
 })
 export class AppMenu {
-    model: any[] = [];
+    model: MenuNode[] = [];
+    constructor(private auth: AuthService) {}
 
     ngOnInit() {
-        this.model = [
-            {
-                label: 'Inicio',
-                icon: 'pi pi-home',
-                items: [
-                    {
-                        label: 'Dashboard',
-                        icon: 'pi pi-fw pi-chart-line',
-                        routerLink: ['/dashboard'],
-                    },
-                ],
-            },
-            {
-                label: 'Gestión',
-                icon: 'pi pi-th-large',
-                items: [
-                    {
-                        label: 'Proveedores',
-                        icon: 'pi pi-fw pi-users',
-                        routerLink: ['/providers'],
-                    },
-                    {
-                        label: 'Productos',
-                        icon: 'pi pi-fw pi-box',
-                        routerLink: ['/products'],
-                    },
-                    {
-                        label: 'Categorías',
-                        icon: 'pi pi-fw pi-tags',
-                        routerLink: ['/categories'],
-                    },
-                    {
-                        label: 'Inventario',
-                        icon: 'pi pi-fw pi-warehouse',
-                        routerLink: ['/inventory'],
-                    },
-                ],
-            },
-            {
-                label: 'Operaciones',
-                icon: 'pi pi-file',
-                items: [
-                    {
-                        label: 'Cargar Facturas',
-                        icon: 'pi pi-fw pi-upload',
-                        routerLink: ['/invoices/upload'],
-                    },
-                    {
-                        label: 'Gestión de Facturas',
-                        icon: 'pi pi-fw pi-file-edit',
-                        routerLink: ['/invoices/management'],
-                    },
-                    {
-                        label: 'Liquidaciones',
-                        icon: 'pi pi-fw pi-dollar',
-                        routerLink: ['/settlements'],
-                    },
-                ],
-            },
-            // {
-            //     label: 'Administración',
-            //     icon: 'pi pi-cog',
-            //     items: [
-            //         {
-            //             label: 'Usuarios',
-            //             icon: 'pi pi-fw pi-user',
-            //             routerLink: ['/users'],
-            //         },
-            //         {
-            //             label: 'Tenant',
-            //             icon: 'pi pi-fw pi-building',
-            //             routerLink: ['/tenants'],
-            //         },
-            //     ],
-            // },
+        const full: MenuNode[] = [
+            { label: 'Inicio', icon: 'pi pi-home', items: [
+                { label: 'Dashboard', icon: 'pi pi-fw pi-chart-line', routerLink: ['/dashboard'], permission: 'dashboard' },
+            ]},
+            { label: 'Gestión', icon: 'pi pi-th-large', items: [
+                { label: 'Proveedores', icon: 'pi pi-fw pi-users', routerLink: ['/providers'], permission: 'providers' },
+                { label: 'Productos', icon: 'pi pi-fw pi-box', routerLink: ['/products'], permission: 'products' },
+                { label: 'Categorías', icon: 'pi pi-fw pi-tags', routerLink: ['/categories'], permission: 'categories' },
+                { label: 'Inventario', icon: 'pi pi-fw pi-warehouse', routerLink: ['/inventory'], permission: 'inventory' },
+            ]},
+            { label: 'Operaciones', icon: 'pi pi-file', items: [
+                { label: 'Cargar Facturas', icon: 'pi pi-fw pi-upload', routerLink: ['/invoices/upload'], permission: 'invoices.upload' },
+                { label: 'Gestión de Facturas', icon: 'pi pi-fw pi-file-edit', routerLink: ['/invoices/management'], permission: 'invoices.manage' },
+                { label: 'Liquidaciones', icon: 'pi pi-fw pi-dollar', routerLink: ['/settlements'], permission: 'settlements' },
+            ]},
         ];
+        const permissions = this.auth.getCurrentUser()?.permissions ?? [];
+        this.model = filterMenuByPermissions(full, permissions);
     }
 }
