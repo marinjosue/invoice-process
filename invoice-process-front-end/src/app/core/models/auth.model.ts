@@ -8,6 +8,7 @@ export interface User {
   phone?: string;
   role: 'admin' | 'manager' | 'user' | 'viewer';
   permissions: string[];
+  roles?: string[];
   tenantId: string;
   tenantName?: string;
   tenantSubdomain?: string;
