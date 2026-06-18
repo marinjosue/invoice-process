@@ -1,0 +1,14 @@
+{
+  // Oculta node_modules del explorador y del buscador para no abrir por
+  // accidente archivos de dependencias (y ver sus avisos de TypeScript).
+  "files.exclude": {
+    "**/node_modules": true
+  },
+  "search.exclude": {
+    "**/node_modules": true
+  },
+  // No vigilar cambios dentro de node_modules (mejor rendimiento).
+  "files.watcherExclude": {
+    "**/node_modules/**": true
+  }
+}

@@ -1,0 +1,10 @@
+{
+  /* Config solo para los archivos de prueba (Jest).
+     El tsconfig.json principal excluye los *.spec.ts, así que el editor
+     no les cargaba los tipos de Jest. Este archivo los incluye (sin
+     restringir 'types', para que se carguen TODOS los @types: jest, node,
+     multer, express...). No afecta a 'nest build' ni a la ejecución de Jest. */
+  "extends": "./tsconfig.json",
+  "include": ["src/**/*.spec.ts", "test/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
