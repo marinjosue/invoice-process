@@ -144,8 +144,8 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          cd cliente
-          
+          cd invoice-process-front-end
+
           # Deploy a producción
           DEPLOY_URL=$(vercel --prod --token=$VERCEL_TOKEN --yes 2>&1 | grep -o 'https://[^ ]*' | head -1)
           

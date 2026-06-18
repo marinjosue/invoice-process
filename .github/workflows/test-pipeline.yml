@@ -29,8 +29,8 @@ jobs:
           MESSAGE+="🌿 <b>Rama:</b> test%0A"
           MESSAGE+="⏰ <b>Iniciado:</b> $(date +'%Y-%m-%d %H:%M:%S')%0A%0A"
           MESSAGE+="📋 <b>Tests a ejecutar:</b>%0A"
-          MESSAGE+="  • 🖥️ Servidor: 18 tests%0A"
-          MESSAGE+="  • 💻 Cliente: 19 tests%0A%0A"
+          MESSAGE+="  • 🖥️ Backend (NestJS · Jest)%0A"
+          MESSAGE+="  • 💻 Frontend (Angular · Karma)%0A%0A"
           MESSAGE+="⏳ <b>Ejecutando tests...</b>%0A"
           MESSAGE+="Recibirás notificación al completar%0A%0A"
           MESSAGE+="🔗 <a href='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'>Ver Progreso en Tiempo Real</a>"
@@ -46,36 +46,42 @@ jobs:
     needs: [notify-start]
     strategy:
       matrix:
-        component: [servidor, cliente]
+        include:
+          - component: backend
+            dir: invoice-process-back-end
+            test_cmd: npm test -- --coverage --ci --passWithNoTests
+          - component: frontend
+            dir: invoice-process-front-end
+            test_cmd: npm test -- --no-watch --no-progress --browsers=ChromeHeadlessCI --code-coverage
       fail-fast: false
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-      
+
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: ${{ matrix.component }}/package-lock.json
-      
+          cache-dependency-path: ${{ matrix.dir }}/package-lock.json
+
       - name: 📦 Install dependencies - ${{ matrix.component }}
         run: |
-          cd ${{ matrix.component }}
+          cd ${{ matrix.dir }}
           npm ci
-      
+
       - name: 🧪 Run tests - ${{ matrix.component }}
         id: test
         continue-on-error: true
         env:
           CI: true
         run: |
-          cd ${{ matrix.component }}
-          # Ejecutar tests y capturar el EXIT CODE REAL de Jest (no parsear texto).
-          # PIPESTATUS[0] = código de salida de npm/jest aunque el output pase por 'tee'.
+          cd ${{ matrix.dir }}
+          # Ejecutar tests y capturar el EXIT CODE REAL (no parsear texto).
+          # PIPESTATUS[0] = código de salida de npm/jest/karma aunque el output pase por 'tee'.
           set -o pipefail
-          npm test -- --coverage --passWithNoTests --watchAll=false 2>&1 | tee test-output.log
+          ${{ matrix.test_cmd }} 2>&1 | tee test-output.log
           TEST_EXIT=${PIPESTATUS[0]}
 
           if [ "$TEST_EXIT" -eq 0 ]; then
@@ -91,7 +97,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.component }}
-          path: ${{ matrix.component }}/coverage/
+          path: ${{ matrix.dir }}/coverage/
           retention-days: 30
       
       - name: ✅ Notificar tests exitosos

@@ -42,17 +42,19 @@ jobs:
             ${{ runner.os }}-pip-
       
       - name: ✅ Verificar modelos ML
+        id: verify-model
         run: |
           echo "🔍 Verificando modelos entrenados..."
-          if [ ! -f ml-security/models/model_vulnerabilities.pkl ]; then
-            echo "❌ Error: Modelo principal no encontrado"
-            exit 1
+          # NOTA: model_vulnerabilities.pkl (~477 MB) ya NO se versiona en git
+          # (está ignorado y solo en el historial LFS). Si no está presente,
+          # el análisis ML se OMITE con gracia en vez de romper el pipeline.
+          if [ -f ml-security/models/model_vulnerabilities.pkl ] && [ -f ml-security/model_vulnerabilities.py ]; then
+            echo "✅ Modelos ML disponibles"
+            echo "model_status=available" >> $GITHUB_OUTPUT
+          else
+            echo "::warning::Modelo ML no presente en el checkout — se omite el análisis ML (cubierto por SonarCloud)."
+            echo "model_status=missing" >> $GITHUB_OUTPUT
           fi
-          if [ ! -f ml-security/model_vulnerabilities.py ]; then
-            echo "❌ Error: Definición del modelo no encontrada"
-            exit 1
-          fi
-          echo "✅ Todos los modelos están disponibles"
       
       - name: 🔍 Detectar archivos modificados
         id: changed-files
@@ -66,6 +68,7 @@ jobs:
       
       - name: 🔍 Escanear vulnerabilidades con ML
         id: scan
+        if: steps.verify-model.outputs.model_status == 'available'
         run: |
           pip install requests numpy scikit-learn torch transformers cloudpickle pandas
           chmod +x .github/scripts/scan_vulnerabilities.py
