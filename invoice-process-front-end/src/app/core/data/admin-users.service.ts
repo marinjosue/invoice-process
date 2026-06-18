@@ -10,6 +10,9 @@ export class AdminUsersService {
   listUsuarios(): Observable<any[]> {
     return this.api.get<any[]>('/admin/usuarios');
   }
+  listRoles(): Observable<any[]> {
+    return this.api.get<any[]>('/admin/roles');
+  }
   createPersona(data: { identification: string; firstName: string; lastName: string; email: string; phone?: string }): Observable<any> {
     return this.api.post('/admin/personas', data);
   }

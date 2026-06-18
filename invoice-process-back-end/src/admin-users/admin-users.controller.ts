@@ -41,6 +41,11 @@ export class AdminUsersController {
     return { success: true };
   }
 
+  @Get('roles')
+  listRoles() {
+    return this.adminUsersService.listRoles();
+  }
+
   @Get('usuarios')
   listUsuarios(@GetUser('tenantId') tenantId: any) {
     return this.usuarioRolService.listUsersWithRoles(tenantId._id.toString());

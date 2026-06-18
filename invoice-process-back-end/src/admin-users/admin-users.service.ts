@@ -33,6 +33,10 @@ export class AdminUsersService {
     });
   }
 
+  async listRoles() {
+    return this.roleModel.find().select('name description').sort({ name: 1 }).exec();
+  }
+
   async createRol(dto: CreateRolDto) {
     const dup = await this.roleModel.findOne({ name: dto.name }).exec();
     if (dup) throw new ConflictException('El rol ya existe');

@@ -16,6 +16,12 @@ describe('AdminUsersService', () => {
     service = TestBed.inject(AdminUsersService);
   });
 
+  it('listRoles llama GET /admin/roles', () => {
+    api.get.and.returnValue(of([]));
+    service.listRoles().subscribe();
+    expect(api.get).toHaveBeenCalledWith('/admin/roles');
+  });
+
   it('listUsuarios llama GET /admin/usuarios', () => {
     api.get.and.returnValue(of([]));
     service.listUsuarios().subscribe();
