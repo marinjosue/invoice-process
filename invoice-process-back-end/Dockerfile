@@ -5,7 +5,7 @@ WORKDIR /usr/src/app
 
 # Install dependencies
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 # Copy source code and build
 COPY . .
@@ -18,7 +18,7 @@ WORKDIR /usr/src/app
 
 # Install only production dependencies
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
 # Copy built artifacts from the builder stage
 COPY --from=builder /usr/src/app/dist ./dist
