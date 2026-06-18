@@ -13,6 +13,7 @@ describe('UsuarioRolService', () => {
   beforeEach(async () => {
     usuarioRolModel = {
       find: jest.fn(),
+      findOne: jest.fn(),
       deleteMany: jest.fn().mockResolvedValue({}),
       create: jest.fn().mockResolvedValue({}),
     };
@@ -50,5 +51,12 @@ describe('UsuarioRolService', () => {
 
   it('assignRoles con lista vacía lanza error', async () => {
     await expect(service.assignRoles('u1', [])).rejects.toThrow();
+  });
+
+  it('onModuleInit no aborta si un create falla con 11000', async () => {
+    userModel.find.mockReturnValue({ exec: () => Promise.resolve([{ _id: 'u1', rolId: 'r1' }]) });
+    usuarioRolModel.findOne = jest.fn().mockReturnValue({ exec: () => Promise.resolve(null) });
+    usuarioRolModel.create.mockRejectedValueOnce({ code: 11000 });
+    await expect(service.onModuleInit()).resolves.toBeUndefined();
   });
 });

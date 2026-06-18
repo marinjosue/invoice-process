@@ -14,15 +14,26 @@ export class UsuarioRolService implements OnModuleInit {
 
   /** Migración idempotente: cada usuario con rolId pero sin UsuarioRol obtiene su fila. */
   async onModuleInit(): Promise<void> {
-    const users = await this.userModel.find({}, '_id rolId').exec();
-    for (const u of users) {
-      if (!u.rolId) continue;
-      const exists = await this.usuarioRolModel
-        .findOne({ usuarioId: u._id, rolId: u.rolId })
-        .exec();
-      if (!exists) {
-        await this.usuarioRolModel.create({ usuarioId: u._id, rolId: u.rolId });
+    try {
+      const users = await this.userModel.find({}, '_id rolId').exec();
+      for (const u of users) {
+        if (!u.rolId) continue;
+        try {
+          const exists = await this.usuarioRolModel
+            .findOne({ usuarioId: u._id, rolId: u.rolId })
+            .exec();
+          if (!exists) {
+            await this.usuarioRolModel.create({ usuarioId: u._id, rolId: u.rolId });
+          }
+        } catch (err: any) {
+          if (err?.code !== 11000) {
+            console.warn(`Migración UsuarioRol: usuario ${u._id} omitido:`, err?.message);
+          }
+          // duplicado (11000) o error puntual → continuar sin abortar el arranque
+        }
       }
+    } catch (err: any) {
+      console.warn('Migración UsuarioRol omitida:', err?.message);
     }
   }
 
