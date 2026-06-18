@@ -1,7 +1,7 @@
 // src/usuario-rol/usuario-rol.service.ts
 import { Injectable, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { UsuarioRol } from './schemas/usuario-rol.schema';
 import { User } from '../users/schemas/user.schema';
 
@@ -40,7 +40,7 @@ export class UsuarioRolService implements OnModuleInit {
   /** Nombres de los roles activos de un usuario. */
   async getRoleNames(userId: string): Promise<string[]> {
     const rows = await this.usuarioRolModel
-      .find({ usuarioId: userId, estado: 'active' })
+      .find({ usuarioId: new Types.ObjectId(userId), estado: 'active' })
       .populate('rolId', 'name')
       .exec();
     return rows.map((r: any) => r.rolId?.name).filter(Boolean);
@@ -51,11 +51,15 @@ export class UsuarioRolService implements OnModuleInit {
     if (!roleIds || roleIds.length === 0) {
       throw new BadRequestException('Debe asignar al menos un rol');
     }
-    await this.usuarioRolModel.deleteMany({ usuarioId: userId });
+    // IMPORTANTE: convertir a ObjectId (como el resto del código). Si se pasan
+    // strings crudos, Mongoose los guarda como String y deja de coincidir con
+    // las filas ObjectId → deleteMany no borra y el listado no las trae.
+    const uid = new Types.ObjectId(userId);
+    await this.usuarioRolModel.deleteMany({ usuarioId: uid });
     for (const rolId of roleIds) {
-      await this.usuarioRolModel.create({ usuarioId: userId, rolId });
+      await this.usuarioRolModel.create({ usuarioId: uid, rolId: new Types.ObjectId(rolId) });
     }
-    await this.userModel.updateOne({ _id: userId }, { rolId: roleIds[0] });
+    await this.userModel.updateOne({ _id: uid }, { rolId: new Types.ObjectId(roleIds[0]) });
   }
 
   /** Lista usuarios del tenant con persona y roles. */
