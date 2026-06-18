@@ -161,7 +161,7 @@ export class InvoicesController {
   }
 
   @Delete(':id')
-  @Roles('admin', 'manager', 'user')
+  @Roles('admin')
   async delete(
     @Param('id') id: string,
     @GetUser('tenantId') tenantId: any,
