@@ -1,0 +1,23 @@
+- generic [ref=e3]:
+  - img [ref=e4]
+  - generic [ref=e12]:
+    - generic [ref=e13]:
+      - generic [ref=e14]: Sistema de Liquidaciones
+      - text: Ingresa tus credenciales
+    - generic [ref=e16]:
+      - generic [ref=e17]:
+        - generic [ref=e18]: 
+        - textbox "Correo electrónico" [ref=e19]
+      - generic [ref=e20]:
+        - generic [ref=e21]: 
+        - textbox "Contraseña" [ref=e22]
+      - generic [ref=e23]:
+        - generic [ref=e24]:
+          - checkbox "Recuérdame" [ref=e26] [cursor=pointer]
+          - generic [ref=e28]: Recuérdame
+        - link "¿Olvidaste tu contraseña?" [ref=e29] [cursor=pointer]:
+          - /url: /auth/forgot-password
+      - button "Iniciar Sesión" [ref=e30] [cursor=pointer]:
+        - generic [ref=e31]: Iniciar Sesión
+  - button "" [ref=e32] [cursor=pointer]:
+    - generic [ref=e33]: 
