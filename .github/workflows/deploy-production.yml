@@ -42,7 +42,7 @@ jobs:
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
             -d "text=${MESSAGE}" \
-            -d "parse_mode=HTML"
+            -d "parse_mode=HTML" || true
 
   deploy-backend:
     name: 🖥️ Deploy Backend to Cloud Run
@@ -78,7 +78,6 @@ jobs:
           docker push gcr.io/${{ env.GCP_PROJECT }}/${{ env.BACKEND_SERVICE }}:latest
 
       - name: 🚀 Deploy backend to Cloud Run
-        id: deploy
         run: |
           gcloud run deploy ${{ env.BACKEND_SERVICE }} \
             --image gcr.io/${{ env.GCP_PROJECT }}/${{ env.BACKEND_SERVICE }}:${{ github.sha }} \
@@ -95,27 +94,23 @@ jobs:
           MESSAGE+="🖥️ <b>Servicio:</b> ${{ env.BACKEND_SERVICE }}%0A"
           MESSAGE+="☁️ <b>Plataforma:</b> Google Cloud Run%0A"
           MESSAGE+="📝 <b>Commit:</b> ${GITHUB_SHA:0:7}%0A"
-          MESSAGE+="🌐 <b>URL:</b> https://api.devsje.dev%0A%0A"
-          MESSAGE+="✅ <b>Estado:</b> En producción"
+          MESSAGE+="🌐 <b>URL:</b> https://api.devsje.dev"
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
             -d "text=${MESSAGE}" \
-            -d "parse_mode=HTML"
+            -d "parse_mode=HTML" || true
 
-      - name: 📱 Notificar error en backend
+      - name: 📱 Notificar error backend
         if: failure()
         run: |
           MESSAGE="❌ <b>ERROR EN DEPLOY BACKEND</b>%0A%0A"
-          MESSAGE+="🖥️ <b>Servicio:</b> ${{ env.BACKEND_SERVICE }}%0A"
-          MESSAGE+="☁️ <b>Plataforma:</b> Google Cloud Run%0A"
-          MESSAGE+="❌ <b>Estado:</b> Deploy fallido%0A%0A"
           MESSAGE+="🔗 <a href='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'>Ver Logs</a>"
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
             -d "text=${MESSAGE}" \
-            -d "parse_mode=HTML"
+            -d "parse_mode=HTML" || true
 
   deploy-frontend:
     name: 💻 Deploy Frontend to Cloud Run
@@ -151,7 +146,6 @@ jobs:
           docker push gcr.io/${{ env.GCP_PROJECT }}/${{ env.FRONTEND_SERVICE }}:latest
 
       - name: 🚀 Deploy frontend to Cloud Run
-        id: deploy
         run: |
           gcloud run deploy ${{ env.FRONTEND_SERVICE }} \
             --image gcr.io/${{ env.GCP_PROJECT }}/${{ env.FRONTEND_SERVICE }}:${{ github.sha }} \
@@ -169,27 +163,23 @@ jobs:
           MESSAGE+="💻 <b>Servicio:</b> ${{ env.FRONTEND_SERVICE }}%0A"
           MESSAGE+="☁️ <b>Plataforma:</b> Google Cloud Run%0A"
           MESSAGE+="📝 <b>Commit:</b> ${GITHUB_SHA:0:7}%0A"
-          MESSAGE+="🌐 <b>URL:</b> https://liquidaciones.devsje.dev%0A%0A"
-          MESSAGE+="✅ <b>Estado:</b> En producción"
+          MESSAGE+="🌐 <b>URL:</b> https://liquidaciones.devsje.dev"
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
             -d "text=${MESSAGE}" \
-            -d "parse_mode=HTML"
+            -d "parse_mode=HTML" || true
 
-      - name: 📱 Notificar error en frontend
+      - name: 📱 Notificar error frontend
         if: failure()
         run: |
           MESSAGE="❌ <b>ERROR EN DEPLOY FRONTEND</b>%0A%0A"
-          MESSAGE+="💻 <b>Servicio:</b> ${{ env.FRONTEND_SERVICE }}%0A"
-          MESSAGE+="☁️ <b>Plataforma:</b> Google Cloud Run%0A"
-          MESSAGE+="❌ <b>Estado:</b> Deploy fallido%0A%0A"
           MESSAGE+="🔗 <a href='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'>Ver Logs</a>"
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
             -d "text=${MESSAGE}" \
-            -d "parse_mode=HTML"
+            -d "parse_mode=HTML" || true
 
   notify-deploy-complete:
     name: 📱 Notify Deployment Complete
@@ -221,7 +211,7 @@ jobs:
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
             -d "text=${MESSAGE}" \
-            -d "parse_mode=HTML"
+            -d "parse_mode=HTML" || true
 
   notify-deploy-failure:
     name: 📱 Notify Deployment Failure
@@ -230,16 +220,14 @@ jobs:
     if: failure()
 
     steps:
-      - name: 📱 Notificar fallo en despliegue
+      - name: 📱 Notificar fallo
         run: |
           MESSAGE="❌ <b>ERROR EN DESPLIEGUE</b>%0A%0A"
-          MESSAGE+="📦 <b>Repositorio:</b> ${{ github.repository }}%0A"
           MESSAGE+="🌿 <b>Rama:</b> main%0A"
-          MESSAGE+="❌ <b>Estado:</b> Despliegue fallido%0A%0A"
-          MESSAGE+="⚠️ <b>Uno o más servicios no se desplegaron%0A%0A"
+          MESSAGE+="⚠️ Uno o más servicios no se desplegaron%0A%0A"
           MESSAGE+="🔗 <a href='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'>Ver Logs Detallados</a>"
 
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
             -d "text=${MESSAGE}" \
-            -d "parse_mode=HTML"
+            -d "parse_mode=HTML" || true

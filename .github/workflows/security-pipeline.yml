@@ -158,6 +158,7 @@ jobs:
       
       - name: 📱 Notificar a Telegram
         if: always()
+        continue-on-error: true
         run: |
           pip install requests
           python .github/scripts/notify_telegram.py
