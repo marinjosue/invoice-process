@@ -1,17 +1,15 @@
 // src/usuario-rol/usuario-rol.service.ts
 import { Injectable, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model } from 'mongoose';
 import { UsuarioRol } from './schemas/usuario-rol.schema';
 import { User } from '../users/schemas/user.schema';
-import { Role } from '../roles/schemas/role.schema';
 
 @Injectable()
 export class UsuarioRolService implements OnModuleInit {
   constructor(
     @InjectModel(UsuarioRol.name) private usuarioRolModel: Model<UsuarioRol>,
     @InjectModel(User.name) private userModel: Model<User>,
-    @InjectModel(Role.name) private roleModel: Model<Role>,
   ) {}
 
   /** Migración idempotente: cada usuario con rolId pero sin UsuarioRol obtiene su fila. */
