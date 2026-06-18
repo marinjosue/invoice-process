@@ -14,11 +14,18 @@ describe('permissionsForRole', () => {
     ]);
   });
 
-  it('user no ve categorías ni liquidaciones', () => {
-    const perms = permissionsForRole('user');
-    expect(perms).toContain('invoices.upload');
-    expect(perms).not.toContain('categories');
-    expect(perms).not.toContain('settlements');
+  it('manager tiene gestión + operación sin administración', () => {
+    expect(permissionsForRole('manager')).toEqual([
+      'dashboard', 'providers', 'products', 'categories', 'inventory',
+      'invoices.upload', 'invoices.manage', 'settlements',
+    ]);
+  });
+
+  it('user es operador de facturas (sin categorías ni liquidaciones)', () => {
+    expect(permissionsForRole('user')).toEqual([
+      'dashboard', 'providers', 'products', 'inventory',
+      'invoices.upload', 'invoices.manage',
+    ]);
   });
 
   it('rol desconocido o ausente devuelve []', () => {

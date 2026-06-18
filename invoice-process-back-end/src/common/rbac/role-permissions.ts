@@ -1,4 +1,3 @@
-
 /** Única fuente de verdad de la matriz rol → claves de pestaña. */
 export const ROLE_PERMISSIONS: Record<string, string[]> = {
   admin: [
