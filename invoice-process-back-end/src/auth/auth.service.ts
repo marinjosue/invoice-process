@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { EmailService } from './email.service';
 import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
+import { permissionsForRole } from '../common/rbac/role-permissions';
 
 @Injectable()
 export class AuthService {
@@ -50,6 +51,7 @@ export class AuthService {
         firstName: persona?.firstName,
         lastName: persona?.lastName,
         role: role?.name,
+        permissions: permissionsForRole(role?.name),
         tenantId: tenant?._id,
         tenantName: tenant?.name,
         tenantSubdomain: tenant?.subdomain,
@@ -147,6 +149,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        permissions: permissionsForRole(user.role),
         tenantId: tenant?._id ?? tenant,
         tenantName: tenant?.name,
         tenantSubdomain: tenant?.subdomain,
