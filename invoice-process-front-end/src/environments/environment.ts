@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://invoice-process-backend-6ldaij4dwa-uc.a.run.app/api',
+  apiUrl: 'https://api.devsje.dev/api',
   apiTimeout: 30000,
   apiRetryAttempts: 3
 };
