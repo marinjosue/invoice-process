@@ -4,11 +4,14 @@ import { getModelToken } from '@nestjs/mongoose';
 import { UsuarioRolService } from './usuario-rol.service';
 import { UsuarioRol } from './schemas/usuario-rol.schema';
 import { User } from '../users/schemas/user.schema';
+import { Role } from '../roles/schemas/role.schema';
+import { PAGE_KEYS } from '../common/rbac/pages';
 
 describe('UsuarioRolService', () => {
   let service: UsuarioRolService;
   let usuarioRolModel: any;
   let userModel: any;
+  let roleModel: any;
 
   beforeEach(async () => {
     usuarioRolModel = {
@@ -18,12 +21,14 @@ describe('UsuarioRolService', () => {
       create: jest.fn().mockResolvedValue({}),
     };
     userModel = { updateOne: jest.fn().mockResolvedValue({}), find: jest.fn() };
+    roleModel = { find: jest.fn() };
 
     const ref = await Test.createTestingModule({
       providers: [
         UsuarioRolService,
         { provide: getModelToken(UsuarioRol.name), useValue: usuarioRolModel },
         { provide: getModelToken(User.name), useValue: userModel },
+        { provide: getModelToken(Role.name), useValue: roleModel },
       ],
     }).compile();
     service = ref.get(UsuarioRolService);
@@ -71,5 +76,28 @@ describe('UsuarioRolService', () => {
     usuarioRolModel.findOne = jest.fn().mockReturnValue({ exec: () => Promise.resolve(null) });
     usuarioRolModel.create.mockRejectedValueOnce({ code: 11000 });
     await expect(service.onModuleInit()).resolves.toBeUndefined();
+  });
+
+  it('getUserPermissions une los permissions de los roles', async () => {
+    // getRoleNames → ['user','viewer']
+    usuarioRolModel.find.mockReturnValue({ populate: () => ({ exec: () => Promise.resolve([
+      { rolId: { name: 'user' } }, { rolId: { name: 'viewer' } },
+    ]) }) });
+    roleModel.find.mockReturnValue({ select: () => ({ exec: () => Promise.resolve([
+      { name: 'user', permissions: ['dashboard','products'] },
+      { name: 'viewer', permissions: ['dashboard','settlements'] },
+    ]) }) });
+    await expect(service.getUserPermissions('507f1f77bcf86cd799439011'))
+      .resolves.toEqual(['dashboard','products','settlements']);
+  });
+
+  it('getUserPermissions con rol admin devuelve TODAS las páginas', async () => {
+    usuarioRolModel.find.mockReturnValue({ populate: () => ({ exec: () => Promise.resolve([
+      { rolId: { name: 'admin' } },
+    ]) }) });
+    roleModel.find.mockReturnValue({ select: () => ({ exec: () => Promise.resolve([
+      { name: 'admin', permissions: [] },
+    ]) }) });
+    await expect(service.getUserPermissions('507f1f77bcf86cd799439011')).resolves.toEqual(PAGE_KEYS);
   });
 });
