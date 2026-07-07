@@ -1,4 +1,5 @@
-import { IsArray, IsEmail, IsNotEmpty, IsOptional, IsString, ArrayNotEmpty } from 'class-validator';
+import { IsArray, IsEmail, IsIn, IsNotEmpty, IsOptional, IsString, ArrayNotEmpty } from 'class-validator';
+import { PAGE_KEYS } from '../../common/rbac/pages';
 
 export class CreatePersonaDto {
   @IsString() @IsNotEmpty() identification: string;
@@ -18,6 +19,11 @@ export class CreateUsuarioDto {
 export class CreateRolDto {
   @IsString() @IsNotEmpty() name: string;
   @IsOptional() @IsString() description?: string;
+  @IsArray() @IsIn(PAGE_KEYS, { each: true }) permissions: string[];
+}
+
+export class UpdateRolDto {
+  @IsArray() @IsIn(PAGE_KEYS, { each: true }) permissions: string[];
 }
 
 export class AssignRolesDto {
