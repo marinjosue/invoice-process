@@ -37,6 +37,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     const roles = await this.usuarioRolService.getRoleNames(String(user._id));
-    return { ...user, roles: roles.length ? roles : [user.role].filter(Boolean) };
+    const permissions = await this.usuarioRolService.getUserPermissions(String(user._id));
+    return { ...user, roles: roles.length ? roles : [user.role].filter(Boolean), permissions };
   }
 }

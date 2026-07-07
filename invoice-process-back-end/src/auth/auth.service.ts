@@ -3,7 +3,6 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { EmailService } from './email.service';
 import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
-import { permissionsForRoles } from '../common/rbac/role-permissions';
 import { UsuarioRolService } from '../usuario-rol/usuario-rol.service';
 
 @Injectable()
@@ -46,6 +45,7 @@ export class AuthService {
 
     const roles = await this.usuarioRolService.getRoleNames(user._id.toString());
     const roleNames = roles.length ? roles : [role?.name].filter(Boolean) as string[];
+    const permissions = await this.usuarioRolService.getUserPermissions(user._id.toString());
 
     return {
       success: true,
@@ -57,7 +57,7 @@ export class AuthService {
         lastName: persona?.lastName,
         role: role?.name,
         roles: roleNames,
-        permissions: permissionsForRoles(roleNames),
+        permissions,
         tenantId: tenant?._id,
         tenantName: tenant?.name,
         tenantSubdomain: tenant?.subdomain,
@@ -149,6 +149,7 @@ export class AuthService {
 
     const roles = await this.usuarioRolService.getRoleNames(user._id.toString());
     const roleNames = roles.length ? roles : [user.role].filter(Boolean) as string[];
+    const permissions = await this.usuarioRolService.getUserPermissions(user._id.toString());
 
     return {
       success: true,
@@ -159,7 +160,7 @@ export class AuthService {
         lastName: user.lastName,
         role: user.role,
         roles: roleNames,
-        permissions: permissionsForRoles(roleNames),
+        permissions,
         tenantId: tenant?._id ?? tenant,
         tenantName: tenant?.name,
         tenantSubdomain: tenant?.subdomain,
