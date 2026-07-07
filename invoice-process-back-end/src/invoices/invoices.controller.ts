@@ -135,6 +135,7 @@ export class InvoicesController {
   }
 
   @Post('validate-and-save')
+  @RequierePermiso('invoices.upload')
   @ApiOperation({ summary: 'Validar productos y guardar factura' })
   async validateAndSave(
     @Body() invoiceData: any,
