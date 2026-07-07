@@ -3,20 +3,20 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { InvoicesService } from './invoices.service';
 import { GetUser } from '../common/decorators/get-user.decorator';
-import { Roles } from '../common/decorators/roles.decorator';
-import { RolesGuard } from '../common/guards/roles.guard';
+import { PermissionsGuard } from '../common/guards/permissions.guard';
+import { RequierePermiso } from '../common/decorators/require-permission.decorator';
 
 @ApiTags('Validación de Facturas')
 @ApiBearerAuth('bearer')
 @Controller('invoices')
-@UseGuards(AuthGuard('jwt'), RolesGuard)
+@UseGuards(AuthGuard('jwt'), PermissionsGuard)
+@RequierePermiso('invoices.manage')
 export class ValidationController {
   private readonly logger = new Logger(ValidationController.name);
 
   constructor(private invoicesService: InvoicesService) {}
 
   @Get(':id/check-duplicates')
-  @Roles('admin', 'manager', 'user', 'viewer')
   @ApiOperation({ summary: 'Verificar si proveedores y productos ya existen' })
   async checkDuplicates(
     @Param('id') invoiceId: string,
@@ -31,7 +31,6 @@ export class ValidationController {
   }
 
   @Post(':id/finalize-validation')
-  @Roles('admin', 'manager', 'user')
   @ApiOperation({ summary: 'Finalizar validación y guardar factura' })
   async finalizeValidation(
     @Param('id') invoiceId: string,

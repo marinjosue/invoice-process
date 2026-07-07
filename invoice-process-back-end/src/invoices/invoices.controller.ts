@@ -4,19 +4,20 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiResponse } from '
 import { FileInterceptor } from '@nestjs/platform-express';
 import { InvoicesService } from './invoices.service';
 import { GetUser } from '../common/decorators/get-user.decorator';
-import { Roles } from '../common/decorators/roles.decorator';
-import { RolesGuard } from '../common/guards/roles.guard';
+import { PermissionsGuard } from '../common/guards/permissions.guard';
+import { RequierePermiso } from '../common/decorators/require-permission.decorator';
 
 @ApiTags('Facturas')
 @ApiBearerAuth('bearer')
 @Controller('invoices')
-@UseGuards(AuthGuard('jwt'), RolesGuard)
+@UseGuards(AuthGuard('jwt'), PermissionsGuard)
+@RequierePermiso('invoices.manage')
 export class InvoicesController {
   private readonly logger = new Logger(InvoicesController.name);
   constructor(private invoicesService: InvoicesService) {}
 
   @Post('upload')
-  @Roles('admin', 'manager', 'user')
+  @RequierePermiso('invoices.upload')
   @ApiOperation({ summary: 'Subir y procesar factura' })
   @ApiConsumes('multipart/form-data')
   @ApiResponse({ status: 201, description: 'Factura procesada exitosamente' })
@@ -46,7 +47,6 @@ export class InvoicesController {
   }
 
   @Get()
-  @Roles('admin', 'manager', 'user', 'viewer')
   async findAll(
     @GetUser() user: any,
     @Query('status') status?: string,
@@ -82,7 +82,6 @@ export class InvoicesController {
   }
 
   @Get(':id')
-  @Roles('admin', 'manager', 'user', 'viewer')
   async findOne(
     @Param('id') id: string,
     @GetUser() user: any,
@@ -102,7 +101,6 @@ export class InvoicesController {
   }
 
   @Put(':id')
-  @Roles('admin', 'manager', 'user')
   @ApiOperation({ summary: 'Actualizar factura' })
   async update(
     @Param('id') id: string,
@@ -123,7 +121,6 @@ export class InvoicesController {
   }
 
   @Put(':id/validate')
-  @Roles('admin', 'manager', 'user')
   async validate(
     @Param('id') id: string,
     @Body() updateData: any,
@@ -138,7 +135,6 @@ export class InvoicesController {
   }
 
   @Post('validate-and-save')
-  @Roles('admin', 'manager', 'user')
   @ApiOperation({ summary: 'Validar productos y guardar factura' })
   async validateAndSave(
     @Body() invoiceData: any,
@@ -161,7 +157,6 @@ export class InvoicesController {
   }
 
   @Delete(':id')
-  @Roles('admin')
   async delete(
     @Param('id') id: string,
     @GetUser('tenantId') tenantId: any,
@@ -170,7 +165,6 @@ export class InvoicesController {
   }
 
   @Get(':id/file-url')
-  @Roles('admin', 'manager', 'user', 'viewer')
   @ApiOperation({ summary: 'Obtener URL firmada para ver/descargar archivo de factura' })
   async getFileUrl(
     @Param('id') id: string,
