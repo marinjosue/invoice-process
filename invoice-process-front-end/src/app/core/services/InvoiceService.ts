@@ -121,7 +121,4 @@ export class InvoiceService {
     });
   }
 
-  updateStatus(id: string, status: Invoice['status']): Observable<{ success: boolean; invoice: Invoice }> {
-    return this.http.put<{ success: boolean; invoice: Invoice }>(`${this.apiUrl}/${id}`, { status });
-  }
 }

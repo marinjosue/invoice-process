@@ -197,21 +197,8 @@ import { environment } from '../../../environments/environment';
           </div>
 
           <div class="field">
-            <label for="status" class="font-semibold">Estado</label>
-            <p-select
-              id="status"
-              formControlName="status"
-              [options]="statusOptions"
-              optionLabel="label"
-              optionValue="value"
-              [style]="{'width': '100%'}">
-              <ng-template let-status pTemplate="selectedItem">
-                <p-tag [value]="status.label" [severity]="status.severity" />
-              </ng-template>
-              <ng-template let-status pTemplate="item">
-                <p-tag [value]="status.label" [severity]="status.severity" />
-              </ng-template>
-            </p-select>
+            <label class="font-semibold block mb-2">Estado</label>
+            <p-tag [value]="currentInvoiceStatus || 'PENDING'" [severity]="getStatusSeverity(currentInvoiceStatus || 'PENDING')" />
           </div>
 
           <div class="field">
@@ -277,6 +264,7 @@ export class InvoicesManagementPage implements OnInit {
   showDialog = false;
   isSaving = false;
   currentInvoiceId: string | null = null;
+  currentInvoiceStatus: string | null = null;
   invoiceForm: FormGroup;
 
   selectedStatusFilter: string | null = null;
@@ -310,7 +298,6 @@ export class InvoicesManagementPage implements OnInit {
       invoiceDate: ['', Validators.required],
       supplierId: ['', Validators.required],
       currency: ['USD'],
-      status: ['PENDING'],
       subtotal: [0],
       tax: [0],
       total: [0],
@@ -396,12 +383,12 @@ export class InvoicesManagementPage implements OnInit {
           invoiceDate: invoice.invoiceDate ? new Date(invoice.invoiceDate).toISOString().split('T')[0] : '',
           supplierId: supplierId,
           currency: invoice.currency || 'USD',
-          status: invoice.status || 'PENDING',
           subtotal: invoice.subtotal || 0,
           tax: invoice.tax || 0,
           total: invoice.total || 0,
           notes: invoice.notes || ''
         });
+        this.currentInvoiceStatus = invoice.status || 'PENDING';
         this.showDialog = true;
       },
       error: () => {
@@ -469,9 +456,9 @@ export class InvoicesManagementPage implements OnInit {
   closeDialog(): void {
     this.showDialog = false;
     this.currentInvoiceId = null;
+    this.currentInvoiceStatus = null;
     this.invoiceForm.reset({
       currency: 'USD',
-      status: 'PENDING',
       subtotal: 0,
       tax: 0,
       total: 0
