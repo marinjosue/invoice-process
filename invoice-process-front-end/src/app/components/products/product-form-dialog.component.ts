@@ -62,7 +62,14 @@ export interface Category {
 
         <div>
           <label class="block font-medium text-sm mb-2">Unidad</label>
-          <input pInputText formControlName="unit" class="w-full" placeholder="Ej: Unidad, Caja, Kg" />
+          <input
+            pInputText
+            formControlName="unit"
+            class="w-full"
+            placeholder="Ej: Unidad, Caja, Kg"
+            pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]*"
+            (input)="keepOnlyLetters('unit')"
+          />
         </div>
 
         <div>
@@ -158,7 +165,7 @@ export class ProductFormDialogComponent implements OnChanges {
     this.productForm = this.fb.group({
       sku: ['', Validators.required],
       description: ['', Validators.required],
-      unit: ['Unidad'],
+      unit: ['Unidad', Validators.pattern(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]*$/)],
       categoryId: [''],
       estimatedCost: [0],
       currentStock: [0],
@@ -170,7 +177,10 @@ export class ProductFormDialogComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['productData'] && this.productData) {
-      this.productForm.patchValue(this.productData);
+      this.productForm.patchValue({
+        ...this.productData,
+        unit: this.onlyLetters(this.productData.unit)
+      });
     }
     
     if (changes['visible'] && !this.visible) {
@@ -203,5 +213,18 @@ export class ProductFormDialogComponent implements OnChanges {
     if (this.productForm.valid) {
       this.save.emit(this.productForm.value);
     }
+  }
+
+  keepOnlyLetters(controlName: 'unit'): void {
+    const control = this.productForm.get(controlName);
+    const lettersValue = this.onlyLetters(control?.value);
+
+    if (control?.value !== lettersValue) {
+      control?.setValue(lettersValue, { emitEvent: false });
+    }
+  }
+
+  private onlyLetters(value?: string | null): string {
+    return String(value ?? '').replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]/g, '');
   }
 }
