@@ -169,7 +169,7 @@ export class InvoicesService {
     }
 
     // Actualizar solo campos permitidos
-    const allowedFields = ['status', 'notes', 'invoiceNumber', 'invoiceDate', 'supplierId', 'currency', 'subtotal', 'tax', 'total'];
+    const allowedFields = ['notes', 'invoiceNumber', 'invoiceDate', 'supplierId', 'currency', 'subtotal', 'tax', 'total'];
     
     Object.keys(updateData).forEach(key => {
       if (allowedFields.includes(key) && updateData[key] !== undefined) {

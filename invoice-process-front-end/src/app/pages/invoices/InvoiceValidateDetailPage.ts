@@ -133,22 +133,7 @@ import { MessageService } from 'primeng/api';
               }
               <div class="flex items-center gap-2">
                 <label class="text-sm font-medium">Estado:</label>
-                <p-select
-                  [(ngModel)]="currentStatus"
-                  [options]="statusOptions"
-                  optionLabel="label"
-                  optionValue="value"
-                  [ngModelOptions]="{standalone: true}"
-                  (onChange)="onStatusChange($event)"
-                  styleClass="w-40"
-                >
-                  <ng-template pTemplate="selectedItem" let-option>
-                    <p-tag [value]="option.label" [severity]="getStatusSeverity(option.value)" />
-                  </ng-template>
-                  <ng-template pTemplate="item" let-option>
-                    <p-tag [value]="option.label" [severity]="getStatusSeverity(option.value)" />
-                  </ng-template>
-                </p-select>
+                <p-tag [value]="getStatusLabel(currentStatus)" [severity]="getStatusSeverity(currentStatus)" />
               </div>
             </div>
           </div>
@@ -474,15 +459,6 @@ export class InvoiceValidateDetailPage implements OnInit {
   suppliers = signal<any[]>([]);
   products = signal<any[]>([]);
   currentStatus: string = 'EXTRACTED';
-  
-  statusOptions = [
-    { label: 'Pendiente', value: 'PENDING' },
-    { label: 'Procesando', value: 'PROCESSING' },
-    { label: 'Extraído', value: 'EXTRACTED' },
-    { label: 'Validado', value: 'VALIDATED' },
-    { label: 'Finalizado', value: 'FINALIZED' },
-    { label: 'Error', value: 'ERROR' }
-  ];
   
   currencies = [
     { label: 'USD', value: 'USD' },
@@ -831,21 +807,16 @@ export class InvoiceValidateDetailPage implements OnInit {
     }
   }
 
-  onStatusChange(event: any): void {
-    const newStatus = event.value;
-    this.invoiceService.updateStatus(this.invoiceId, newStatus).subscribe({
-      next: (response) => {
-        this.notificationService.success('Estado actualizado', `Estado cambiado a: ${newStatus}`);
-        if (this.invoiceData) {
-          this.invoiceData.status = newStatus;
-        }
-      },
-      error: (error) => {
-        this.notificationService.error('Error', 'No se pudo actualizar el estado');
-        // Revertir al estado anterior
-        this.currentStatus = this.invoiceData?.status || 'EXTRACTED';
-      }
-    });
+  getStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      'PENDING': 'Pendiente',
+      'PROCESSING': 'Procesando',
+      'EXTRACTED': 'Extraído',
+      'VALIDATED': 'Validado',
+      'FINALIZED': 'Finalizado',
+      'ERROR': 'Error'
+    };
+    return labels[status] || status;
   }
 
   getStatusSeverity(status: string): 'secondary' | 'success' | 'info' | 'warn' | 'danger' {
