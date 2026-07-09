@@ -47,7 +47,15 @@ export interface ProviderFormData {
 
         <div>
           <label class="block font-medium text-sm mb-2">NIT/RUC</label>
-          <input pInputText formControlName="taxId" class="w-full" placeholder="Ej: 800123456-1" />
+          <input
+            pInputText
+            formControlName="taxId"
+            class="w-full"
+            placeholder="Ej: 8001234561"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            (input)="keepOnlyNumbers('taxId')"
+          />
         </div>
 
         <div>
@@ -57,7 +65,15 @@ export interface ProviderFormData {
 
         <div>
           <label class="block font-medium text-sm mb-2">Teléfono</label>
-          <input pInputText formControlName="phone" class="w-full" placeholder="+57 300 123 4567" />
+          <input
+            pInputText
+            formControlName="phone"
+            class="w-full"
+            placeholder="Ej: 573001234567"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            (input)="keepOnlyNumbers('phone')"
+          />
         </div>
 
         <div>
@@ -118,9 +134,9 @@ export class ProviderFormDialogComponent implements OnChanges {
   constructor(private fb: FormBuilder) {
     this.providerForm = this.fb.group({
       name: ['', Validators.required],
-      taxId: [''],
+      taxId: ['', Validators.pattern(/^[0-9]*$/)],
       email: ['', Validators.email],
-      phone: [''],
+      phone: ['', Validators.pattern(/^[0-9]*$/)],
       address: [''],
       city: [''],
       country: [''],
@@ -130,7 +146,11 @@ export class ProviderFormDialogComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['providerData'] && this.providerData) {
-      this.providerForm.patchValue(this.providerData);
+      this.providerForm.patchValue({
+        ...this.providerData,
+        taxId: this.onlyNumbers(this.providerData.taxId),
+        phone: this.onlyNumbers(this.providerData.phone)
+      });
     }
     
     if (changes['visible'] && !this.visible) {
@@ -151,5 +171,18 @@ export class ProviderFormDialogComponent implements OnChanges {
     if (this.providerForm.valid) {
       this.save.emit(this.providerForm.value);
     }
+  }
+
+  keepOnlyNumbers(controlName: 'taxId' | 'phone'): void {
+    const control = this.providerForm.get(controlName);
+    const numericValue = this.onlyNumbers(control?.value);
+
+    if (control?.value !== numericValue) {
+      control?.setValue(numericValue, { emitEvent: false });
+    }
+  }
+
+  private onlyNumbers(value?: string | null): string {
+    return String(value ?? '').replace(/\D/g, '');
   }
 }
