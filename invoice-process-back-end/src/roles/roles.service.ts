@@ -36,7 +36,7 @@ export class RolesService implements OnModuleInit {
       );
       // Rellenar permissions en roles que ya existían sin ellos.
       await this.roleModel.updateOne(
-        { name: role.name, $or: [{ permissions: { $exists: false } }, { permissions: { $size: 0 } }] },
+        { name: role.name, permissions: { $exists: false } },
         { $set: { permissions } },
       );
     }
