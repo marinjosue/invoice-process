@@ -72,6 +72,7 @@ import { NotificationService } from '@/shared/services/notification.service';
         <!-- Upload Zone -->
         <p-fileUpload
           name="invoice"
+          chooseLabel="Seleccionar"
           [customUpload]="true"
           (uploadHandler)="onFileSelect($event)"
           accept="application/pdf"
