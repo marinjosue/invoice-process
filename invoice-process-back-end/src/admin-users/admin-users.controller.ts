@@ -2,18 +2,18 @@
 import { Controller, Post, Put, Get, Body, Param, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import { RolesGuard } from '../common/guards/roles.guard';
-import { Roles } from '../common/decorators/roles.decorator';
+import { PermissionsGuard } from '../common/guards/permissions.guard';
+import { RequierePermiso } from '../common/decorators/require-permission.decorator';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { AdminUsersService } from './admin-users.service';
 import { UsuarioRolService } from '../usuario-rol/usuario-rol.service';
-import { CreatePersonaDto, CreateUsuarioDto, CreateRolDto, AssignRolesDto } from './dto/admin-users.dto';
+import { CreatePersonaDto, CreateUsuarioDto, CreateRolDto, AssignRolesDto, UpdateRolDto } from './dto/admin-users.dto';
 
 @ApiTags('Admin · Usuarios')
 @ApiBearerAuth('bearer')
 @Controller('admin')
-@UseGuards(AuthGuard('jwt'), RolesGuard)
-@Roles('admin')
+@UseGuards(AuthGuard('jwt'), PermissionsGuard)
+@RequierePermiso('admin.users')
 export class AdminUsersController {
   constructor(
     private adminUsersService: AdminUsersService,
@@ -49,5 +49,15 @@ export class AdminUsersController {
   @Get('usuarios')
   listUsuarios(@GetUser('tenantId') tenantId: any) {
     return this.usuarioRolService.listUsersWithRoles(tenantId._id.toString());
+  }
+
+  @Get('pages')
+  listPages() {
+    return this.adminUsersService.listPages();
+  }
+
+  @Put('roles/:id')
+  updateRol(@Param('id') id: string, @Body() dto: UpdateRolDto) {
+    return this.adminUsersService.updateRol(id, dto.permissions);
   }
 }

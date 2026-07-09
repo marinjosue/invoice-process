@@ -19,10 +19,16 @@ export class AdminUsersService {
   createUsuario(data: { personaId: string; username: string; password: string; roleIds: string[] }): Observable<any> {
     return this.api.post('/admin/usuarios', data);
   }
-  createRol(data: { name: string; description?: string }): Observable<any> {
+  createRol(data: { name: string; description?: string; permissions: string[] }): Observable<any> {
     return this.api.post('/admin/roles', data);
   }
   assignRoles(usuarioId: string, roleIds: string[]): Observable<any> {
     return this.api.put(`/admin/usuarios/${usuarioId}/roles`, { roleIds });
+  }
+  listPages(): Observable<any[]> {
+    return this.api.get<any[]>('/admin/pages');
+  }
+  updateRol(id: string, permissions: string[]): Observable<any> {
+    return this.api.put(`/admin/roles/${id}`, { permissions });
   }
 }

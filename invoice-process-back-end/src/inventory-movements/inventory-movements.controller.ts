@@ -4,14 +4,14 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagg
 import { InventoryMovementsService } from './inventory-movements.service';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { CreateInventoryMovementDto, UpdateInventoryMovementDto } from './dto/inventory-movement.dto';
-import { RolesGuard } from '../common/guards/roles.guard';
-import { Roles } from '../common/decorators/roles.decorator';
+import { PermissionsGuard } from '../common/guards/permissions.guard';
+import { RequierePermiso } from '../common/decorators/require-permission.decorator';
 
 @ApiTags('Movimientos de Inventario')
 @ApiBearerAuth('bearer')
 @Controller('inventory-movements')
-@UseGuards(AuthGuard('jwt'), RolesGuard)
-@Roles('admin', 'manager', 'user')
+@UseGuards(AuthGuard('jwt'), PermissionsGuard)
+@RequierePermiso('inventory')
 export class InventoryMovementsController {
   constructor(private inventoryMovementsService: InventoryMovementsService) {}
 

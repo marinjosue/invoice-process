@@ -4,12 +4,15 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { UsuarioRol } from './schemas/usuario-rol.schema';
 import { User } from '../users/schemas/user.schema';
+import { Role } from '../roles/schemas/role.schema';
+import { PAGE_KEYS, unionPerms } from '../common/rbac/pages';
 
 @Injectable()
 export class UsuarioRolService implements OnModuleInit {
   constructor(
     @InjectModel(UsuarioRol.name) private usuarioRolModel: Model<UsuarioRol>,
     @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(Role.name) private roleModel: Model<Role>,
   ) {}
 
   /** Migración idempotente: cada usuario con rolId pero sin UsuarioRol obtiene su fila. */
@@ -44,6 +47,14 @@ export class UsuarioRolService implements OnModuleInit {
       .populate('rolId', 'name')
       .exec();
     return rows.map((r: any) => r.rolId?.name).filter(Boolean);
+  }
+
+  /** Permisos efectivos del usuario = unión de Role.permissions; admin ⇒ todas. */
+  async getUserPermissions(userId: string): Promise<string[]> {
+    const names = await this.getRoleNames(userId);
+    if (names.includes('admin')) return [...PAGE_KEYS];
+    const roles = await this.roleModel.find({ name: { $in: names } }).select('permissions').exec();
+    return unionPerms(roles.map((r: any) => r.permissions ?? []));
   }
 
   /** Reemplaza el conjunto de roles del usuario; sincroniza rolId con el primero. */
