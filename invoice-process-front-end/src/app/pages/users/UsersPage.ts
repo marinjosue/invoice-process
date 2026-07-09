@@ -236,11 +236,14 @@ import { AdminUsersService } from '@/core/data/admin-users.service';
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="gu-field">
               <label for="nuId">Identificación</label>
-              <input id="nuId" pInputText [(ngModel)]="nuevoUsuario.identification" placeholder="Cédula / RUC" autocomplete="off" />
+              <input id="nuId" pInputText [(ngModel)]="nuevoUsuario.identification" (input)="nuevoUsuario.identification = onlyDigits($event)"
+                     pattern="\\d*" placeholder="Cédula / RUC" autocomplete="off" />
+              <small class="text-red-500" *ngIf="nuevoUsuario.identification && !soloDigitos(nuevoUsuario.identification)">Solo números</small>
             </div>
             <div class="gu-field">
               <label for="nuEmail">Email</label>
               <input id="nuEmail" pInputText type="email" [(ngModel)]="nuevoUsuario.email" placeholder="correo@empresa.com" autocomplete="off" />
+              <small class="text-red-500" *ngIf="nuevoUsuario.email && !emailValido(nuevoUsuario.email)">Email inválido</small>
             </div>
             <div class="gu-field">
               <label for="nuNombre">Nombres</label>
@@ -252,7 +255,9 @@ import { AdminUsersService } from '@/core/data/admin-users.service';
             </div>
             <div class="gu-field sm:col-span-2">
               <label for="nuPhone">Teléfono <span style="opacity:.5">(opcional)</span></label>
-              <input id="nuPhone" pInputText [(ngModel)]="nuevoUsuario.phone" placeholder="09xxxxxxxx" autocomplete="off" />
+              <input id="nuPhone" pInputText [(ngModel)]="nuevoUsuario.phone" (input)="nuevoUsuario.phone = onlyDigits($event)"
+                     pattern="\\d*" placeholder="09xxxxxxxx" autocomplete="off" />
+              <small class="text-red-500" *ngIf="nuevoUsuario.phone && !soloDigitos(nuevoUsuario.phone)">Solo números</small>
             </div>
           </div>
         </div>
@@ -269,6 +274,7 @@ import { AdminUsersService } from '@/core/data/admin-users.service';
               <label for="nuPass">Contraseña</label>
               <p-password inputId="nuPass" [(ngModel)]="nuevoUsuario.password" [feedback]="false" [toggleMask]="true"
                           placeholder="••••••••" styleClass="w-full" inputStyleClass="w-full"></p-password>
+              <small class="text-red-500" *ngIf="nuevoUsuario.password && nuevoUsuario.password.length < 6">Mínimo 6 caracteres</small>
             </div>
             <div class="gu-field sm:col-span-2">
               <label>Roles</label>
@@ -319,11 +325,30 @@ export class UsersPage implements OnInit {
 
   ngOnInit() { this.cargar(); }
 
-  /** Valida que el formulario de nuevo usuario tenga los campos obligatorios. */
+  /** Valida que el formulario de nuevo usuario tenga los campos obligatorios y con formato correcto. */
   get nuevoUsuarioValido(): boolean {
     const u = this.nuevoUsuario;
-    return !!(u.identification.trim() && u.firstName.trim() && u.lastName.trim()
-      && u.email.trim() && u.username.trim() && u.password && u.roleIds.length);
+    return !!(u.identification.trim() && this.soloDigitos(u.identification)
+      && u.firstName.trim() && u.lastName.trim()
+      && u.email.trim() && this.emailValido(u.email)
+      && (!u.phone || this.soloDigitos(u.phone))
+      && u.username.trim() && u.password && u.password.length >= 6
+      && u.roleIds.length);
+  }
+
+  /** Extrae solo dígitos del valor de un input, para bloquear caracteres no numéricos. */
+  onlyDigits(e: any): string {
+    return (e?.target?.value || '').replace(/\D/g, '');
+  }
+
+  /** True si el valor contiene únicamente dígitos (y no está vacío). */
+  soloDigitos(v: string): boolean {
+    return /^\d+$/.test(v);
+  }
+
+  /** Valida un email con un patrón simple. */
+  emailValido(v: string): boolean {
+    return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
   }
 
   /** Color del tag según el rol, para distinguirlos de un vistazo. */
