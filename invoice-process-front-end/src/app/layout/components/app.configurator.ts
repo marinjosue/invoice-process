@@ -12,6 +12,16 @@ import { Router } from '@angular/router';
 import { DrawerModule } from 'primeng/drawer';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { RadioButtonModule } from 'primeng/radiobutton';
+import { ButtonModule } from 'primeng/button';
+
+const DEFAULT_CONFIG = {
+    preset: 'Aura',
+    primary: 'indigo',
+    surface: null as string | null,
+    darkTheme: false,
+    menuMode: 'static',
+    menuTheme: 'colorScheme'
+};
 
 const presets = {
     Aura,
@@ -42,13 +52,24 @@ declare type SurfacesType = {
 @Component({
     selector: 'app-configurator',
     standalone: true,
-    imports: [CommonModule, FormsModule, SelectButtonModule, DrawerModule, ToggleSwitchModule, RadioButtonModule],
+    imports: [CommonModule, FormsModule, SelectButtonModule, DrawerModule, ToggleSwitchModule, RadioButtonModule, ButtonModule],
     template: `
         <button *ngIf="simple" class="layout-config-button config-link" type="button" (click)="toggleConfigSidebar()">
             <i class="pi pi-cog"></i>
         </button>
         <p-drawer [visible]="visible()" (onHide)="onDrawerHide()" position="right" [transitionOptions]="'.3s cubic-bezier(0, 0, 0.2, 1)'" styleClass="layout-config-sidebar w-80" header="Configuración">
             <div class="flex flex-col gap-4">
+                <div class="flex justify-end">
+                    <p-button
+                        label="Establecer predeterminada"
+                        icon="pi pi-refresh"
+                        size="small"
+                        severity="secondary"
+                        [outlined]="true"
+                        (onClick)="resetToDefaults()"
+                    ></p-button>
+                </div>
+
                 <div>
                     <span class="text-lg font-semibold">Primario</span>
                     <div class="pt-2 flex gap-2 flex-wrap">
@@ -538,5 +559,21 @@ export class AppConfigurator implements OnInit {
     isTransparentThemeOptionDisabled() {
         const menuMode = this.menuMode();
         return ['reveal', 'overlay', 'drawer'].includes(menuMode as string);
+    }
+
+    resetToDefaults() {
+        this.menuMode.set(DEFAULT_CONFIG.menuMode);
+
+        this.layoutService.layoutConfig.update((state) => ({
+            ...state,
+            preset: DEFAULT_CONFIG.preset,
+            primary: DEFAULT_CONFIG.primary,
+            surface: DEFAULT_CONFIG.surface,
+            darkTheme: DEFAULT_CONFIG.darkTheme,
+            menuMode: DEFAULT_CONFIG.menuMode,
+            menuTheme: DEFAULT_CONFIG.menuTheme
+        }));
+
+        this.onPresetChange(DEFAULT_CONFIG.preset);
     }
 }
