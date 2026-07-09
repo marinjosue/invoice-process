@@ -2,6 +2,8 @@
 
 Sistema de gestión de facturas, productos, proveedores y liquidaciones con arquitectura por funcionalidades.
 
+Verificacion universitaria del flujo CI/CD hacia produccion.
+
 Este proyecto fue generado usando [Angular CLI](https://github.com/angular/angular-cli) version 20.0.5.
 
 ---

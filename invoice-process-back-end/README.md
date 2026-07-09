@@ -32,6 +32,8 @@ Este es el servicio de backend para el Sistema de Liquidaciones e Importaciones.
 
 La aplicación está preparada para desplegarse automáticamente en **Google Cloud Platform** mediante **Cloud Run** y **Cloud Build**.
 
+Verificacion universitaria del flujo CI/CD hacia produccion.
+
 Para ver las instrucciones detalladas de despliegue, consulta el siguiente archivo:
 
 📄 **[Guía de Despliegue en GCP](./GCP_DEPLOY.md)**
