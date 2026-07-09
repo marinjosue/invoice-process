@@ -42,7 +42,14 @@ export interface ProviderFormData {
       <form [formGroup]="providerForm" class="grid grid-cols-2 gap-4 mt-4">
         <div class="col-span-2">
           <label class="block font-medium text-sm mb-2">Nombre *</label>
-          <input pInputText formControlName="name" class="w-full" placeholder="Nombre del proveedor" />
+          <input
+            pInputText
+            formControlName="name"
+            class="w-full"
+            placeholder="Nombre del proveedor"
+            pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]*"
+            (input)="keepOnlyLetters('name')"
+          />
         </div>
 
         <div>
@@ -78,12 +85,26 @@ export interface ProviderFormData {
 
         <div>
           <label class="block font-medium text-sm mb-2">Ciudad</label>
-          <input pInputText formControlName="city" class="w-full" placeholder="Ej: Bogotá" />
+          <input
+            pInputText
+            formControlName="city"
+            class="w-full"
+            placeholder="Ej: Bogotá"
+            pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]*"
+            (input)="keepOnlyLetters('city')"
+          />
         </div>
 
         <div class="col-span-2">
           <label class="block font-medium text-sm mb-2">País</label>
-          <input pInputText formControlName="country" class="w-full" placeholder="Ej: Colombia" />
+          <input
+            pInputText
+            formControlName="country"
+            class="w-full"
+            placeholder="Ej: Colombia"
+            pattern="[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]*"
+            (input)="keepOnlyLetters('country')"
+          />
         </div>
 
         <div class="col-span-2">
@@ -133,13 +154,13 @@ export class ProviderFormDialogComponent implements OnChanges {
 
   constructor(private fb: FormBuilder) {
     this.providerForm = this.fb.group({
-      name: ['', Validators.required],
+      name: ['', [Validators.required, Validators.pattern(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]*$/)]],
       taxId: ['', Validators.pattern(/^[0-9]*$/)],
       email: ['', Validators.email],
       phone: ['', Validators.pattern(/^[0-9]*$/)],
       address: [''],
-      city: [''],
-      country: [''],
+      city: ['', Validators.pattern(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]*$/)],
+      country: ['', Validators.pattern(/^[A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]*$/)],
       isActive: [true]
     });
   }
@@ -148,8 +169,11 @@ export class ProviderFormDialogComponent implements OnChanges {
     if (changes['providerData'] && this.providerData) {
       this.providerForm.patchValue({
         ...this.providerData,
+        name: this.onlyLetters(this.providerData.name),
         taxId: this.onlyNumbers(this.providerData.taxId),
-        phone: this.onlyNumbers(this.providerData.phone)
+        phone: this.onlyNumbers(this.providerData.phone),
+        city: this.onlyLetters(this.providerData.city),
+        country: this.onlyLetters(this.providerData.country)
       });
     }
     
@@ -182,7 +206,20 @@ export class ProviderFormDialogComponent implements OnChanges {
     }
   }
 
+  keepOnlyLetters(controlName: 'name' | 'city' | 'country'): void {
+    const control = this.providerForm.get(controlName);
+    const textValue = this.onlyLetters(control?.value);
+
+    if (control?.value !== textValue) {
+      control?.setValue(textValue, { emitEvent: false });
+    }
+  }
+
   private onlyNumbers(value?: string | null): string {
     return String(value ?? '').replace(/\D/g, '');
+  }
+
+  private onlyLetters(value?: string | null): string {
+    return String(value ?? '').replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ ]/g, '');
   }
 }
