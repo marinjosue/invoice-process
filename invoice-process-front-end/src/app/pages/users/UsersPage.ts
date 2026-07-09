@@ -165,7 +165,9 @@ import { AdminUsersService } from '@/core/data/admin-users.service';
             <p-tag [value]="rol.name" [severity]="roleSeverity(rol.name)" [rounded]="true"></p-tag>
             <div>
               <div class="gu-rolecell">
-                <p-tag *ngFor="let key of rol.permissions" [value]="pageLabel(key)" severity="secondary" [rounded]="true"></p-tag>
+                <ng-container *ngIf="rol.name !== 'admin'">
+                  <p-tag *ngFor="let key of rol.permissions" [value]="pageLabel(key)" severity="secondary" [rounded]="true"></p-tag>
+                </ng-container>
                 <p-tag *ngIf="rol.name === 'admin'" value="Todas las páginas" severity="danger" [rounded]="true"></p-tag>
                 <span *ngIf="rol.name !== 'admin' && !rol.permissions?.length" style="opacity:.45; font-size:.85rem">— sin páginas asignadas —</span>
               </div>
