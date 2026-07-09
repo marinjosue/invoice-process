@@ -1,5 +1,5 @@
 // src/admin-users/admin-users.service.ts
-import { Injectable, BadRequestException, ConflictException } from '@nestjs/common';
+import { Injectable, BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { User } from '../users/schemas/user.schema';
@@ -7,6 +7,7 @@ import { Person } from '../persons/schemas/person.schema';
 import { Role } from '../roles/schemas/role.schema';
 import { UsuarioRolService } from '../usuario-rol/usuario-rol.service';
 import { CreatePersonaDto, CreateUsuarioDto, CreateRolDto } from './dto/admin-users.dto';
+import { PAGES } from '../common/rbac/pages';
 
 @Injectable()
 export class AdminUsersService {
@@ -34,13 +35,25 @@ export class AdminUsersService {
   }
 
   async listRoles() {
-    return this.roleModel.find().select('name description').sort({ name: 1 }).exec();
+    return this.roleModel.find().select('name description permissions').sort({ name: 1 }).exec();
   }
 
   async createRol(dto: CreateRolDto) {
     const dup = await this.roleModel.findOne({ name: dto.name }).exec();
     if (dup) throw new ConflictException('El rol ya existe');
-    return this.roleModel.create({ name: dto.name, description: dto.description ?? '' });
+    return this.roleModel.create({ name: dto.name, description: dto.description ?? '', permissions: dto.permissions });
+  }
+
+  listPages() {
+    return PAGES;
+  }
+
+  async updateRol(id: string, permissions: string[]) {
+    const rol = await this.roleModel.findById(id).exec();
+    if (!rol) throw new BadRequestException('Rol no encontrado');
+    if ((rol as any).name === 'admin') throw new ForbiddenException('El rol admin no es editable');
+    await this.roleModel.updateOne({ _id: id }, { permissions });
+    return { success: true };
   }
 
   async createUsuario(dto: CreateUsuarioDto) {

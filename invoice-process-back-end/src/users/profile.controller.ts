@@ -6,7 +6,6 @@ import { UsersService } from './users.service';
 import { ProfilePictureService } from './profile-picture.service';
 import { GetUser } from '../common/decorators/get-user.decorator';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-import { permissionsForRoles } from '../common/rbac/role-permissions';
 import { UsuarioRolService } from '../usuario-rol/usuario-rol.service';
 
 @ApiTags('Perfil')
@@ -42,7 +41,7 @@ export class ProfileController {
         profilePicture: profile.profilePicture,
         role: profile.role,
         roles: effectiveRoles,
-        permissions: permissionsForRoles(effectiveRoles),
+        permissions: await this.usuarioRolService.getUserPermissions(user._id.toString()),
         tenantId: profile.tenantId,
         createdAt: (profile as any).createdAt,
       },
@@ -77,7 +76,7 @@ export class ProfileController {
         profilePicture: updatedUser.profilePicture,
         role: updatedUser.role,
         roles: effectiveRoles,
-        permissions: permissionsForRoles(effectiveRoles),
+        permissions: await this.usuarioRolService.getUserPermissions(user._id.toString()),
       },
     };
   }

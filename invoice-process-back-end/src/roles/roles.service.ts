@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Role } from './schemas/role.schema';
+import { ROLE_PERMISSIONS } from '../common/rbac/role-permissions';
 
 /**
  * Roles semilla. Se insertan una sola vez al arrancar (idempotente).
@@ -27,10 +28,16 @@ export class RolesService implements OnModuleInit {
 
   async seedDefaultRoles(): Promise<void> {
     for (const role of DEFAULT_ROLES) {
+      const permissions = ROLE_PERMISSIONS[role.name] ?? [];
       await this.roleModel.updateOne(
         { name: role.name },
-        { $setOnInsert: role },
+        { $setOnInsert: { ...role, permissions } },
         { upsert: true },
+      );
+      // Rellenar permissions en roles que ya existían sin ellos.
+      await this.roleModel.updateOne(
+        { name: role.name, permissions: { $exists: false } },
+        { $set: { permissions } },
       );
     }
   }

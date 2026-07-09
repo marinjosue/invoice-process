@@ -9,34 +9,41 @@ describe('AuthService.getMe', () => {
   let service: AuthService;
   const usersService = { findById: jest.fn(), findByEmail: jest.fn() } as any;
   const jwtServiceMock = { sign: jest.fn() };
+  const usuarioRolMock = {
+    getRoleNames: jest.fn().mockResolvedValue([]),
+    getUserPermissions: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    usuarioRolMock.getRoleNames.mockResolvedValue([]);
     const moduleRef = await Test.createTestingModule({
       providers: [
         AuthService,
         { provide: UsersService, useValue: usersService },
         { provide: JwtService, useValue: jwtServiceMock },
         { provide: EmailService, useValue: {} },
-        { provide: UsuarioRolService, useValue: { getRoleNames: jest.fn().mockResolvedValue([]) } },
+        { provide: UsuarioRolService, useValue: usuarioRolMock },
       ],
     }).compile();
     service = moduleRef.get(AuthService);
   });
 
-  it('incluye permissions según el rol del usuario', async () => {
+  it('incluye permissions obtenidos de UsuarioRolService', async () => {
     usersService.findById.mockResolvedValue({
       _id: 'u1', email: 'a@b.c', firstName: 'A', lastName: 'B',
       role: 'viewer', tenantId: { _id: 't1', name: 'ESPE' }, profilePicture: null,
     });
+    usuarioRolMock.getUserPermissions.mockResolvedValue(['dashboard', 'invoices.manage', 'settlements']);
 
     const res = await service.getMe('u1');
 
     expect(res.user.role).toBe('viewer');
+    expect(usuarioRolMock.getUserPermissions).toHaveBeenCalledWith('u1');
     expect(res.user.permissions).toEqual(['dashboard', 'invoices.manage', 'settlements']);
   });
 
-  it('login incluye permissions del rol resuelto', async () => {
+  it('login incluye permissions obtenidos de UsuarioRolService', async () => {
     const fakeUser: any = {
       _id: { toString: () => 'u1' },
       status: 'active',
@@ -52,10 +59,15 @@ describe('AuthService.getMe', () => {
     };
     usersService.findByEmail.mockResolvedValue(fakeUser);
     (jwtServiceMock.sign as jest.Mock).mockReturnValue('jwt.token');
+    usuarioRolMock.getUserPermissions.mockResolvedValue([
+      'dashboard', 'providers', 'products', 'categories', 'inventory',
+      'invoices.upload', 'invoices.manage', 'settlements', 'admin.users',
+    ]);
 
     const res = await service.login({ email: 'admin@espe.edu.ec', password: 'secret' });
 
     expect(res.user.role).toBe('admin');
+    expect(usuarioRolMock.getUserPermissions).toHaveBeenCalledWith('u1');
     expect(res.user.permissions).toEqual([
       'dashboard', 'providers', 'products', 'categories', 'inventory',
       'invoices.upload', 'invoices.manage', 'settlements', 'admin.users',

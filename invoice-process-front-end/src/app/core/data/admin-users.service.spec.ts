@@ -50,8 +50,20 @@ describe('AdminUsersService', () => {
 
   it('createRol llama POST /admin/roles con el payload', () => {
     api.post.and.returnValue(of({}));
-    const payload = { name: 'auditor', description: 'Solo lectura' };
+    const payload = { name: 'auditor', description: 'Solo lectura', permissions: ['dashboard'] };
     service.createRol(payload).subscribe();
     expect(api.post).toHaveBeenCalledWith('/admin/roles', payload);
+  });
+
+  it('listPages llama GET /admin/pages', () => {
+    api.get.and.returnValue(of([]));
+    service.listPages().subscribe();
+    expect(api.get).toHaveBeenCalledWith('/admin/pages');
+  });
+
+  it('updateRol llama PUT /admin/roles/:id', () => {
+    api.put.and.returnValue(of({}));
+    service.updateRol('r1', ['products']).subscribe();
+    expect(api.put).toHaveBeenCalledWith('/admin/roles/r1', { permissions: ['products'] });
   });
 });
