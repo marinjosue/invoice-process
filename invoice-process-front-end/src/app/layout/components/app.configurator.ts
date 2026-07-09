@@ -47,10 +47,10 @@ declare type SurfacesType = {
         <button *ngIf="simple" class="layout-config-button config-link" type="button" (click)="toggleConfigSidebar()">
             <i class="pi pi-cog"></i>
         </button>
-        <p-drawer [visible]="visible()" (onHide)="onDrawerHide()" position="right" [transitionOptions]="'.3s cubic-bezier(0, 0, 0.2, 1)'" styleClass="layout-config-sidebar w-80" header="Settings">
+        <p-drawer [visible]="visible()" (onHide)="onDrawerHide()" position="right" [transitionOptions]="'.3s cubic-bezier(0, 0, 0.2, 1)'" styleClass="layout-config-sidebar w-80" header="Configuración">
             <div class="flex flex-col gap-4">
                 <div>
-                    <span class="text-lg font-semibold">Primary</span>
+                    <span class="text-lg font-semibold">Primario</span>
                     <div class="pt-2 flex gap-2 flex-wrap">
                         @for (primaryColor of primaryColors(); track primaryColor.name) {
                             <button
@@ -71,7 +71,7 @@ declare type SurfacesType = {
                 </div>
 
                 <div>
-                    <span class="text-lg font-semibold">Surface</span>
+                    <span class="text-lg font-semibold">Superficie</span>
                     <div class="pt-2 flex gap-2 flex-wrap">
                         @for (surface of surfaces; track surface.name) {
                             <button
@@ -91,47 +91,47 @@ declare type SurfacesType = {
                 </div>
 
                 <div class="flex flex-col gap-2">
-                    <span class="text-lg font-semibold">Presets</span>
+                    <span class="text-lg font-semibold">Preajustes</span>
                     <p-selectbutton [options]="presets" [ngModel]="selectedPreset()" (ngModelChange)="onPresetChange($event)" [allowEmpty]="false"></p-selectbutton>
                 </div>
 
                 <div class="flex flex-col gap-2">
-                    <span class="text-lg font-semibold">Color Scheme</span>
+                    <span class="text-lg font-semibold">Esquema de Color</span>
                     <p-selectbutton [ngModel]="darkTheme()" (ngModelChange)="toggleDarkMode()" [options]="themeOptions" optionLabel="name" optionValue="value" [allowEmpty]="false"></p-selectbutton>
                 </div>
 
                 <div *ngIf="!simple" class="flex flex-col gap-2">
-                    <span class="text-lg font-semibold">Menu Type</span>
+                    <span class="text-lg font-semibold">Tipo de Menú</span>
                     <div class="flex flex-wrap flex-col gap-3">
                         <div class="flex">
                             <div class="flex items-center gap-2 w-1/2">
                                 <p-radio-button name="menuMode" value="static" [(ngModel)]="menuMode" (ngModelChange)="setMenuMode('static')" inputId="static"></p-radio-button>
-                                <label for="static">Static</label>
+                                <label for="static">Estático</label>
                             </div>
 
                             <div class="flex items-center gap-2 w-1/2">
                                 <p-radio-button name="menuMode" value="overlay" [(ngModel)]="menuMode" (ngModelChange)="setMenuMode('overlay')" inputId="overlay"></p-radio-button>
-                                <label for="overlay">Overlay</label>
+                                <label for="overlay">Superpuesto</label>
                             </div>
                         </div>
                         <div class="flex">
                             <div class="flex items-center gap-2 w-1/2">
                                 <p-radio-button name="menuMode" value="slim" [(ngModel)]="menuMode" (ngModelChange)="setMenuMode('slim')" inputId="slim"></p-radio-button>
-                                <label for="slim">Slim</label>
+                                <label for="slim">Delgado</label>
                             </div>
                             <div class="flex items-center gap-2 w-1/2">
                                 <p-radio-button name="menuMode" value="slim-plus" [(ngModel)]="menuMode" (ngModelChange)="setMenuMode('slim-plus')" inputId="slim-plus"></p-radio-button>
-                                <label for="slim-plus">Slim+</label>
+                                <label for="slim-plus">Delgado+</label>
                             </div>
                         </div>
                         <div class="flex">
                             <div class="flex items-center gap-2 w-1/2">
                                 <p-radio-button name="menuMode" value="reveal" [(ngModel)]="menuMode" (ngModelChange)="setMenuMode('reveal')" inputId="reveal"></p-radio-button>
-                                <label for="reveal">Reveal</label>
+                                <label for="reveal">Revelar</label>
                             </div>
                             <div class="flex items-center gap-2 w-1/2">
                                 <p-radio-button name="menuMode" value="drawer" [(ngModel)]="menuMode" (ngModelChange)="setMenuMode('drawer')" inputId="drawer"></p-radio-button>
-                                <label for="drawer">Drawer</label>
+                                <label for="drawer">Deslizable</label>
                             </div>
                         </div>
                         <div class="flex items-center gap-2 w-1/2">
@@ -142,20 +142,20 @@ declare type SurfacesType = {
                 </div>
 
                 <div *ngIf="!simple" class="flex flex-col gap-2">
-                    <span class="text-lg font-semibold">Menu Theme</span>
+                    <span class="text-lg font-semibold">Tema del Menú</span>
                     <div class="flex flex-wrap flex-col gap-4">
                         <div class="flex items-center gap-2">
                             <p-radiobutton name="menuTheme" value="colorScheme" [ngModel]="menuTheme()" (ngModelChange)="setMenuTheme('colorScheme')" inputId="menutheme-colorscheme"></p-radiobutton>
-                            <label for="scheme">Color Scheme</label>
+                            <label for="scheme">Esquema de Color</label>
                         </div>
 
                         <div class="flex items-center gap-2">
                             <p-radiobutton name="menuTheme" value="primaryColor" [ngModel]="menuTheme()" (ngModelChange)="setMenuTheme('primaryColor')" inputId="menutheme-primarycolor"></p-radiobutton>
-                            <label for="primary">Primary Color</label>
+                            <label for="primary">Color Primario</label>
                         </div>
                         <div class="flex items-center gap-2">
                             <p-radiobutton name="menuTheme" value="transparent" [ngModel]="menuTheme()" (ngModelChange)="setMenuTheme('transparent')" inputId="menutheme-transparent" [disabled]="isTransparentThemeOptionDisabled()"></p-radiobutton>
-                            <label for="transparent">Transparent</label>
+                            <label for="transparent">Transparente</label>
                         </div>
                     </div>
                 </div>
@@ -179,8 +179,8 @@ export class AppConfigurator implements OnInit {
     presets = Object.keys(presets);
 
     themeOptions = [
-        { name: 'Light', value: false },
-        { name: 'Dark', value: true }
+        { name: 'Claro', value: false },
+        { name: 'Oscuro', value: true }
     ];
 
     ngOnInit() {
