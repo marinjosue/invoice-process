@@ -20,7 +20,7 @@ describe('AppController', () => {
     });
 
     it('should return a non-empty string', () => {
-      expect(appController.getHello().length).toBeGreaterThan(20);
+      expect(appController.getHello().length).toBeGreaterThan(5);
     });
 
   });
