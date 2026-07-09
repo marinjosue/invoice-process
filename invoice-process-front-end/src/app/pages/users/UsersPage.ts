@@ -105,6 +105,14 @@ import { AdminUsersService } from '@/core/data/admin-users.service';
           <label for="rolDesc">Descripción <span style="opacity:.5">(opcional)</span></label>
           <input id="rolDesc" pInputText [(ngModel)]="nuevoRol.description" placeholder="¿Qué puede hacer este rol?" autocomplete="off" />
         </div>
+        <div class="gu-field">
+          <label>Páginas que puede ver</label>
+          <p-multiSelect [options]="pageOptions" [(ngModel)]="nuevoRol.permissions"
+                         optionLabel="label" optionValue="key" display="chip" [filter]="true"
+                         appendTo="body" placeholder="Selecciona las páginas" styleClass="w-full"
+                         emptyMessage="No hay páginas disponibles.">
+          </p-multiSelect>
+        </div>
       </div>
 
       <ng-template pTemplate="footer">
@@ -112,6 +120,67 @@ import { AdminUsersService } from '@/core/data/admin-users.service';
         <p-button label="Crear rol" icon="pi pi-check" [loading]="savingRol" [disabled]="!nuevoRol.name.trim()" (onClick)="crearRol()"></p-button>
       </ng-template>
     </p-dialog>
+
+    <!-- ───────────────── Editar páginas de un Rol ───────────────── -->
+    <p-dialog [(visible)]="rolPermsDialog" [modal]="true" [draggable]="false" [dismissableMask]="true"
+              [style]="{ width: '26rem' }" [breakpoints]="{ '640px': '92vw' }" [showHeader]="true">
+      <ng-template pTemplate="header">
+        <div class="flex items-center gap-3">
+          <span class="gu-badge"><i class="pi pi-sitemap"></i></span>
+          <div>
+            <div class="font-semibold">Editar páginas del rol</div>
+            <div class="text-sm" style="opacity:.6">{{ rolTarget?.name }}</div>
+          </div>
+        </div>
+      </ng-template>
+
+      <div class="flex flex-col gap-4 pt-2">
+        <div class="gu-field">
+          <label>Páginas que puede ver</label>
+          <p-multiSelect [options]="pageOptions" [(ngModel)]="selectedPages"
+                         optionLabel="label" optionValue="key" display="chip" [filter]="true"
+                         appendTo="body" placeholder="Selecciona las páginas" styleClass="w-full"
+                         emptyMessage="No hay páginas disponibles.">
+          </p-multiSelect>
+        </div>
+      </div>
+
+      <ng-template pTemplate="footer">
+        <p-button label="Cancelar" severity="secondary" [text]="true" (onClick)="rolPermsDialog = false"></p-button>
+        <p-button label="Guardar" icon="pi pi-check" [loading]="savingPerms" (onClick)="guardarPermisosRol()"></p-button>
+      </ng-template>
+    </p-dialog>
+
+    <!-- ───────────────── Roles ───────────────── -->
+    <div class="card mt-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="m-0 text-lg font-semibold">Roles</h3>
+          <p class="m-0 mt-0.5 text-sm" style="opacity:.6">Páginas visibles por cada rol</p>
+        </div>
+      </div>
+      <div class="flex flex-col gap-3">
+        <div *ngFor="let rol of roles" class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 py-3" style="border-bottom:1px solid rgba(128,128,128,.15)">
+          <div class="flex items-start gap-3">
+            <p-tag [value]="rol.name" [severity]="roleSeverity(rol.name)" [rounded]="true"></p-tag>
+            <div>
+              <div class="gu-rolecell">
+                <p-tag *ngFor="let key of rol.permissions" [value]="pageLabel(key)" severity="secondary" [rounded]="true"></p-tag>
+                <p-tag *ngIf="rol.name === 'admin'" value="Todas las páginas" severity="danger" [rounded]="true"></p-tag>
+                <span *ngIf="rol.name !== 'admin' && !rol.permissions?.length" style="opacity:.45; font-size:.85rem">— sin páginas asignadas —</span>
+              </div>
+              <p class="m-0 mt-1 text-sm" style="opacity:.55" *ngIf="rol.description">{{ rol.description }}</p>
+            </div>
+          </div>
+          <p-button *ngIf="rol.name !== 'admin'" label="Editar páginas" icon="pi pi-pencil" size="small" [text]="true" (onClick)="abrirEditarPermisos(rol)"></p-button>
+          <span *ngIf="rol.name === 'admin'" class="text-sm" style="opacity:.5"><i class="pi pi-lock mr-1"></i>Rol bloqueado</span>
+        </div>
+        <div *ngIf="!roles.length" class="text-center py-8" style="opacity:.55">
+          <i class="pi pi-inbox" style="font-size:1.6rem; display:block; margin-bottom:.5rem"></i>
+          Aún no hay roles. Crea el primero con “Nuevo Rol”.
+        </div>
+      </div>
+    </div>
 
     <!-- ───────────────── Asignar Roles ───────────────── -->
     <p-dialog [(visible)]="assignDialog" [modal]="true" [draggable]="false" [dismissableMask]="true"
@@ -228,16 +297,23 @@ export class UsersPage implements OnInit {
   rolDialog = false;
   assignDialog = false;
   nuevoUsuarioDialog = false;
+  rolPermsDialog = false;
 
   savingRol = false;
   savingAssign = false;
   savingUsuario = false;
+  savingPerms = false;
 
-  nuevoRol = { name: '', description: '' };
+  nuevoRol = { name: '', description: '', permissions: [] as string[] };
 
   selectedRoleIds: string[] = [];
   roleOptions: any[] = [];
   assignTarget: any = null;
+
+  roles: any[] = [];
+  pageOptions: { key: string; label: string }[] = [];
+  rolTarget: any = null;
+  selectedPages: string[] = [];
 
   nuevoUsuario = this.emptyUsuario();
 
@@ -268,13 +344,22 @@ export class UsersPage implements OnInit {
       error: () => { this.loading = false; },
     });
     this.admin.listRoles().subscribe({
-      next: (roles) => { this.roleOptions = roles; },
+      next: (roles) => { this.roleOptions = roles; this.roles = roles; },
+      error: () => {},
+    });
+    this.admin.listPages().subscribe({
+      next: (pages) => { this.pageOptions = pages; },
       error: () => {},
     });
   }
 
+  /** Etiqueta legible de una página a partir de su key (fallback: la key misma). */
+  pageLabel(key: string): string {
+    return this.pageOptions.find((p) => p.key === key)?.label ?? key;
+  }
+
   abrirNuevoRol() {
-    this.nuevoRol = { name: '', description: '' };
+    this.nuevoRol = { name: '', description: '', permissions: [] };
     this.rolDialog = true;
   }
 
@@ -283,6 +368,20 @@ export class UsersPage implements OnInit {
     this.admin.createRol(this.nuevoRol).subscribe({
       next: () => { this.savingRol = false; this.rolDialog = false; this.cargar(); },
       error: () => { this.savingRol = false; },
+    });
+  }
+
+  abrirEditarPermisos(rol: any) {
+    this.rolTarget = rol;
+    this.selectedPages = [...(rol.permissions || [])];
+    this.rolPermsDialog = true;
+  }
+
+  guardarPermisosRol() {
+    this.savingPerms = true;
+    this.admin.updateRol(this.rolTarget._id, this.selectedPages).subscribe({
+      next: () => { this.savingPerms = false; this.rolPermsDialog = false; this.cargar(); },
+      error: () => { this.savingPerms = false; },
     });
   }
 
