@@ -33,8 +33,8 @@ export class AppMenu {
             ]},
             { label: 'Gestión', icon: 'pi pi-th-large', items: [
                 { label: 'Proveedores', icon: 'pi pi-fw pi-users', routerLink: ['/providers'], permission: 'providers' },
-                { label: 'Productos', icon: 'pi pi-fw pi-box', routerLink: ['/products'], permission: 'products' },
                 { label: 'Categorías', icon: 'pi pi-fw pi-tags', routerLink: ['/categories'], permission: 'categories' },
+                { label: 'Productos', icon: 'pi pi-fw pi-box', routerLink: ['/products'], permission: 'products' },
                 { label: 'Inventario', icon: 'pi pi-fw pi-warehouse', routerLink: ['/inventory'], permission: 'inventory' },
             ]},
             { label: 'Operaciones', icon: 'pi pi-file', items: [
