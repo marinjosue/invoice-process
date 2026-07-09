@@ -16,9 +16,23 @@ env:
   FRONTEND_SERVICE: invoice-process-frontend
 
 jobs:
+  validar-rama:
+    name: ✅ Validar Rama de Producción
+    runs-on: ubuntu-latest
+    steps:
+      - name: ✅ Confirmar rama main
+        run: |
+          if [ "${{ github.ref }}" != "refs/heads/main" ]; then
+            echo "❌ Este workflow de producción debe ejecutarse desde la rama main."
+            echo "Rama actual: ${{ github.ref_name }}"
+            echo "Selecciona la rama main al usar Run workflow o dispara el deploy desde test-pipeline."
+            exit 1
+          fi
+
   detectar-cambios:
     name: 🔍 Detectar Cambios
     runs-on: ubuntu-latest
+    needs: [validar-rama]
     outputs:
       backend: ${{ steps.cambios.outputs.backend }}
       frontend: ${{ steps.cambios.outputs.frontend }}
@@ -55,7 +69,7 @@ jobs:
   notificar-inicio:
     name: 📱 Notificar Inicio de Despliegue
     runs-on: ubuntu-latest
-    needs: [detectar-cambios]
+    needs: [validar-rama, detectar-cambios]
     if: needs.detectar-cambios.outputs.backend == 'true' || needs.detectar-cambios.outputs.frontend == 'true'
     steps:
       - name: 📱 Enviar notificación de inicio
@@ -70,7 +84,7 @@ jobs:
 
           MESSAGE="🚀 <b>INICIANDO DESPLIEGUE A PRODUCCIÓN</b>%0A%0A"
           MESSAGE+="📦 <b>Repositorio:</b> ${{ github.repository }}%0A"
-          MESSAGE+="🌿 <b>Rama:</b> main%0A"
+          MESSAGE+="🌿 <b>Rama:</b> ${{ github.ref_name }}%0A"
           MESSAGE+="📝 <b>Commit:</b> ${COMMIT_SHORT}%0A%0A"
           MESSAGE+="📋 <b>Servicios a desplegar:</b>%0A"
           MESSAGE+="${SERVICIOS}%0A"
@@ -85,7 +99,7 @@ jobs:
   desplegar-backend:
     name: 🖥️ Desplegar Backend en Cloud Run
     runs-on: ubuntu-latest
-    needs: [detectar-cambios, notificar-inicio]
+    needs: [validar-rama, detectar-cambios, notificar-inicio]
     if: needs.detectar-cambios.outputs.backend == 'true'
     steps:
       - name: 📥 Obtener código
@@ -153,7 +167,7 @@ jobs:
   desplegar-frontend:
     name: 💻 Desplegar Frontend en Cloud Run
     runs-on: ubuntu-latest
-    needs: [detectar-cambios, notificar-inicio]
+    needs: [validar-rama, detectar-cambios, notificar-inicio]
     if: needs.detectar-cambios.outputs.frontend == 'true'
     steps:
       - name: 📥 Obtener código
@@ -222,7 +236,7 @@ jobs:
   notificar-despliegue-completo:
     name: 🎉 Notificar Despliegue Completo
     runs-on: ubuntu-latest
-    needs: [detectar-cambios, desplegar-backend, desplegar-frontend]
+    needs: [validar-rama, detectar-cambios, desplegar-backend, desplegar-frontend]
     if: always() && (needs.desplegar-backend.result == 'success' || needs.desplegar-frontend.result == 'success')
     steps:
       - name: 🎉 Enviar notificación de éxito
